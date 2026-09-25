@@ -1,4 +1,4 @@
-<?php
+<!-- <?php
 
 session_start();
 
@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $_SESSION["user_name"] = $user["name"];
                     $_SESSION["role"] = $user["role"];
                     //upload from talha
-                    
+
                    header("Location: success_login.php");
                     exit;
                 }else{
@@ -142,4 +142,4 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </div>
 
 </body>
-</html>
+</html> -->
