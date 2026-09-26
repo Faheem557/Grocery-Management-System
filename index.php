@@ -46,7 +46,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $_SESSION["shop_id"] = $user["shop_id"];
                     $_SESSION["user_name"] = $user["name"];
                     $_SESSION["role"] = $user["role"];
-                    //upload from talha
                     
                    header("Location: success_login.php");
                     exit;

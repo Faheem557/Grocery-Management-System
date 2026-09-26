@@ -3,7 +3,7 @@
    
    $name = $_SESSION["user_name"];
     if(!$name){
-        header("Location: ../login.php");
+        header("Location: ../index.php");
     }
 
 ?>

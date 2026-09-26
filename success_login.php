@@ -3,11 +3,12 @@
 session_start();
 
 if (!isset($_SESSION["user_id"])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit;
 }
 
 $user_name = $_SESSION["user_name"];
+$role = $_SESSION["role"];
 
 ?>
 
@@ -201,8 +202,15 @@ $user_name = $_SESSION["user_name"];
     <script>
 
        setTimeout(function () {
-
-    window.location.replace("seller/dashboard.php");
+    <?php 
+    if ($role == "customer") {
+        header("Location: customer/customer-dashboard.php");
+    } else {
+        header("Location: seller/dashboard.php");
+    }
+    
+    ?>
+    // window.location.replace("seller/dashboard.php");
 
     }, 2000);
 
