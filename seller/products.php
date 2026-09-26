@@ -6,6 +6,204 @@ if (!isset($_SESSION["user_id"])) {
     header("Location: ../login.php");
     exit;
 }
+/*
+|--------------------------------------------------------------------------
+| DATABASE
+|--------------------------------------------------------------------------
+*/
+
+require_once "../config/database.php";
+
+
+/*
+
+
+/*
+|--------------------------------------------------------------------------
+| HELPER FUNCTIONS
+|--------------------------------------------------------------------------
+*/
+
+function redirectMessage($message, $type = "success")
+{
+    header(
+        "Location: products.php?" .
+        http_build_query([
+            "message" => $message,
+            "type" => $type
+        ])
+    );
+
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| ADD PRODUCT
+|--------------------------------------------------------------------------
+*/
+
+if (
+    $_SERVER["REQUEST_METHOD"] === "POST" &&
+    isset($_POST["add_product"])
+) {
+
+    $product_name = trim($_POST["product_name"] ?? "");
+    $sku = trim($_POST["sku"] ?? "");
+    $category = trim($_POST["category"] ?? "");
+    $unit = trim($_POST["unit"] ?? "");
+
+    $purchase_price = $_POST["purchase_price"] ?? "";
+    $sale_price = $_POST["sale_price"] ?? "";
+    $stock = $_POST["stock"] ?? "";
+
+    $description = trim($_POST["description"] ?? "");
+
+
+     /*
+    |--------------------------------------------------------------------------
+    | VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $product_name === "" ||
+        $sku === "" ||
+        $category === "" ||
+        $unit === "" ||
+        $purchase_price === "" ||
+        $sale_price === "" ||
+        $stock === ""
+    ) {
+        redirectMessage(
+            "Please fill all required fields.",
+            "danger"
+        );
+    }
+
+
+    if (
+        !is_numeric($purchase_price) ||
+        !is_numeric($sale_price) ||
+        !is_numeric($stock)
+    ) {
+        redirectMessage(
+            "Please enter valid price and stock values.",
+            "danger"
+        );
+    }
+
+
+    $purchase_price = (float) $purchase_price;
+    $sale_price = (float) $sale_price;
+    $stock = (int) $stock;
+
+
+    if (
+        $purchase_price < 0 ||
+        $sale_price < 0 ||
+        $stock < 0
+    ) {
+        redirectMessage(
+            "Price and stock cannot be negative.",
+            "danger"
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK SKU
+    |--------------------------------------------------------------------------
+    */
+
+    $checkSku = mysqli_prepare(
+        $conn,
+        "SELECT id FROM products WHERE sku = ? LIMIT 1"
+    );
+
+    mysqli_stmt_bind_param(
+        $checkSku,
+        "s",
+        $sku
+    );
+
+    mysqli_stmt_execute($checkSku);
+
+    mysqli_stmt_store_result($checkSku);
+
+    if (mysqli_stmt_num_rows($checkSku) > 0) {
+
+        mysqli_stmt_close($checkSku);
+
+        redirectMessage(
+            "SKU already exists. Please use a different SKU.",
+            "danger"
+        );
+    }
+
+    mysqli_stmt_close($checkSku);
+
+
+     /*
+    |--------------------------------------------------------------------------
+    | INSERT PRODUCT
+    |--------------------------------------------------------------------------
+    */
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "INSERT INTO products
+        (
+            product_name,
+            sku,
+            category,
+            unit,
+            purchase_price,
+            sale_price,
+            stock,
+            description,
+            status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')"
+    );
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ssssddis",
+        $product_name,
+        $sku,
+        $category,
+        $unit,
+        $purchase_price,
+        $sale_price,
+        $stock,
+        $description
+    );
+
+
+    if (mysqli_stmt_execute($stmt)) {
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Product added successfully.",
+            "success"
+        );
+
+    } else {
+
+        $error = mysqli_stmt_error($stmt);
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Error adding product: " . $error,
+            "danger"
+        );
+    }
+}
 
 ?>
 
@@ -911,178 +1109,237 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
+        <form action="products.php" method="POST">
 
-            <div class="modal-body">
+    <div class="modal-body">
 
-                <form>
+        <div class="row g-3">
 
+            <!-- Product Name -->
+            <div class="col-md-8">
 
-                    <div class="row g-3">
+                <label class="form-label">
+                    Product Name
+                </label>
 
-
-                        <div class="col-md-8">
-
-                            <label class="form-label">
-                                Product Name
-                            </label>
-
-                            <input
-                                type="text"
-                                class="form-control"
-                                placeholder="Enter product name"
-                            >
-
-                        </div>
-
-
-                        <div class="col-md-4">
-
-                            <label class="form-label">
-                                SKU
-                            </label>
-
-                            <input
-                                type="text"
-                                class="form-control"
-                                placeholder="e.g. PRD-001"
-                            >
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <label class="form-label">
-                                Category
-                            </label>
-
-                            <select class="form-select">
-
-                                <option selected>
-                                    Select category
-                                </option>
-
-                                <option>Grocery</option>
-                                <option>Rice & Grains</option>
-                                <option>Dairy</option>
-                                <option>Beverages</option>
-                                <option>Cleaning</option>
-
-                            </select>
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <label class="form-label">
-                                Unit
-                            </label>
-
-                            <select class="form-select">
-
-                                <option selected>
-                                    Select unit
-                                </option>
-
-                                <option>Piece</option>
-                                <option>Kg</option>
-                                <option>Gram</option>
-                                <option>Liter</option>
-                                <option>Pack</option>
-                                <option>Dozen</option>
-
-                            </select>
-
-                        </div>
-
-
-                        <div class="col-md-4">
-
-                            <label class="form-label">
-                                Purchase Price
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                placeholder="0"
-                            >
-
-                        </div>
-
-
-                        <div class="col-md-4">
-
-                            <label class="form-label">
-                                Sale Price
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                placeholder="0"
-                            >
-
-                        </div>
-
-
-                        <div class="col-md-4">
-
-                            <label class="form-label">
-                                Opening Stock
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                placeholder="0"
-                            >
-
-                        </div>
-
-
-                        <div class="col-12">
-
-                            <label class="form-label">
-                                Description
-                            </label>
-
-                            <textarea
-                                class="form-control"
-                                rows="3"
-                                placeholder="Optional product description"
-                            ></textarea>
-
-                        </div>
-
-
-                    </div>
-
-
-                </form>
+                <input
+                    type="text"
+                    name="product_name"
+                    class="form-control"
+                    placeholder="Enter product name"
+                    required
+                >
 
             </div>
 
 
-            <div class="modal-footer">
+            <!-- SKU -->
+            <div class="col-md-4">
 
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
+                <label class="form-label">
+                    SKU
+                </label>
 
-                <button
-                    type="button"
-                    class="btn add-product-btn"
+                <input
+                    type="text"
+                    name="sku"
+                    class="form-control"
+                    placeholder="e.g. PRD-001"
+                    required
                 >
-                    Save Product
-                </button>
 
             </div>
+
+
+            <!-- Category -->
+            <div class="col-md-6">
+
+                <label class="form-label">
+                    Category
+                </label>
+
+                <select
+                    name="category"
+                    class="form-select"
+                    required
+                >
+
+                    <option value="">
+                        Select category
+                    </option>
+
+                    <option value="Grocery">
+                        Grocery
+                    </option>
+
+                    <option value="Rice & Grains">
+                        Rice & Grains
+                    </option>
+
+                    <option value="Dairy">
+                        Dairy
+                    </option>
+
+                    <option value="Beverages">
+                        Beverages
+                    </option>
+
+                    <option value="Cleaning">
+                        Cleaning
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Unit -->
+            <div class="col-md-6">
+
+                <label class="form-label">
+                    Unit
+                </label>
+
+                <select
+                    name="unit"
+                    class="form-select"
+                    required
+                >
+
+                    <option value="">
+                        Select unit
+                    </option>
+
+                    <option value="Piece">
+                        Piece
+                    </option>
+
+                    <option value="Kg">
+                        Kg
+                    </option>
+
+                    <option value="Gram">
+                        Gram
+                    </option>
+
+                    <option value="Liter">
+                        Liter
+                    </option>
+
+                    <option value="Pack">
+                        Pack
+                    </option>
+
+                    <option value="Dozen">
+                        Dozen
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Purchase Price -->
+            <div class="col-md-4">
+
+                <label class="form-label">
+                    Purchase Price
+                </label>
+
+                <input
+                    type="number"
+                    name="purchase_price"
+                    class="form-control"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Sale Price -->
+            <div class="col-md-4">
+
+                <label class="form-label">
+                    Sale Price
+                </label>
+
+                <input
+                    type="number"
+                    name="sale_price"
+                    class="form-control"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Opening Stock -->
+            <div class="col-md-4">
+
+                <label class="form-label">
+                    Opening Stock
+                </label>
+
+                <input
+                    type="number"
+                    name="stock"
+                    class="form-control"
+                    placeholder="0"
+                    min="0"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Description -->
+            <div class="col-12">
+
+                <label class="form-label">
+                    Description
+                </label>
+
+                <textarea
+                    name="description"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Optional product description"
+                ></textarea>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="modal-footer">
+
+        <button
+            type="button"
+            class="btn btn-light"
+            data-bs-dismiss="modal"
+        >
+            Cancel
+        </button>
+
+        <button
+            type="submit"
+            name="add_product"
+            class="btn add-product-btn"
+        >
+            Save Product
+        </button>
+
+    </div>
+
+</form>
 
 
         </div>
