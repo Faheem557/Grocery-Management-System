@@ -946,3 +946,26 @@ textarea.form-control {
     }
 
 }
+
+/* =========================
+   PROFILE LINK
+========================= */
+
+.profile a {
+    text-decoration: none !important;
+    color: inherit !important;
+    border: none !important;
+    outline: none !important;
+}
+
+.profile a:hover {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+.profile a:focus,
+.profile a:active {
+    text-decoration: none !important;
+    outline: none !important;
+    border: none !important;
+}

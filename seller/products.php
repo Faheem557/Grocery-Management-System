@@ -2,11 +2,14 @@
 
 session_start();
 
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 if (!isset($_SESSION["user_id"])) {
-    header("Location: ../login.php");
+    header("Location: ../index.php");
     exit;
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -68,12 +71,12 @@ if (!isset($_SESSION["user_id"])) {
             Products
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="categories.php" class="nav-link">
             <span class="nav-icon">▤</span>
             Categories
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="stock.php" class="nav-link">
             <span class="nav-icon">▥</span>
             Stock
         </a>
@@ -81,17 +84,17 @@ if (!isset($_SESSION["user_id"])) {
 
         <p class="nav-title">SALES</p>
 
-        <a href="#" class="nav-link">
+        <a href="new-sale.php" class="nav-link">
             <span class="nav-icon">＋</span>
             New Sale
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="sales-history.php" class="nav-link">
             <span class="nav-icon">▤</span>
             Sales History
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="invoices.php" class="nav-link">
             <span class="nav-icon">▧</span>
             Invoices
         </a>
@@ -99,17 +102,17 @@ if (!isset($_SESSION["user_id"])) {
 
         <p class="nav-title">CUSTOMERS</p>
 
-        <a href="#" class="nav-link">
+        <a href="customers.php" class="nav-link">
             <span class="nav-icon">♙</span>
             Customers
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="khata.php" class="nav-link">
             <span class="nav-icon">₨</span>
             Digital Khata
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="payments.php" class="nav-link">
             <span class="nav-icon">✓</span>
             Payments
         </a>
@@ -117,12 +120,12 @@ if (!isset($_SESSION["user_id"])) {
 
         <p class="nav-title">PURCHASE</p>
 
-        <a href="#" class="nav-link">
+        <a href="suppliers.php" class="nav-link">
             <span class="nav-icon">▣</span>
             Suppliers
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="purchases.php" class="nav-link">
             <span class="nav-icon">↓</span>
             Purchases
         </a>
@@ -130,17 +133,17 @@ if (!isset($_SESSION["user_id"])) {
 
         <p class="nav-title">BUSINESS</p>
 
-        <a href="#" class="nav-link">
+        <a href="profit.php" class="nav-link">
             <span class="nav-icon">↗</span>
             Profit
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="reports.php" class="nav-link">
             <span class="nav-icon">▥</span>
             Reports
         </a>
 
-        <a href="#" class="nav-link">
+        <a href="settings.php" class="nav-link">
             <span class="nav-icon">⚙</span>
             Settings
         </a>
@@ -165,7 +168,6 @@ if (!isset($_SESSION["user_id"])) {
 </aside>
 
 
-
 <!-- =========================
      MAIN CONTENT
 ========================= -->
@@ -184,8 +186,13 @@ if (!isset($_SESSION["user_id"])) {
             </button>
 
             <div>
+
                 <h1>Products</h1>
-                <p>Manage your grocery products</p>
+
+                <p>
+                    Manage your grocery products
+                </p>
+
             </div>
 
         </div>
@@ -201,18 +208,29 @@ if (!isset($_SESSION["user_id"])) {
 
             <div class="profile">
 
-                <div class="profile-avatar">
-                    T
-                </div>
+                <a href="../profile.php">
+
+                    <div class="profile-avatar">
+
+                        <?php
+                        echo strtoupper(
+                            substr($_SESSION["user_name"] ?? "U", 0, 2)
+                        );
+                        ?>
+
+                    </div>
+
+                </a>
+
 
                 <div class="profile-info">
 
                     <strong>
-                        <?php echo htmlspecialchars($_SESSION["user_name"]); ?>
+                        <?php echo htmlspecialchars($_SESSION["user_name"] ?? "User"); ?>
                     </strong>
 
                     <span>
-                        <?php echo htmlspecialchars($_SESSION["role"]); ?>
+                        <?php echo htmlspecialchars($_SESSION["role"] ?? "seller"); ?>
                     </span>
 
                 </div>
@@ -222,7 +240,6 @@ if (!isset($_SESSION["user_id"])) {
         </div>
 
     </header>
-
 
 
     <!-- PAGE CONTENT -->
@@ -257,7 +274,6 @@ if (!isset($_SESSION["user_id"])) {
         </div>
 
 
-
         <!-- =========================
              SUMMARY CARDS
         ========================= -->
@@ -275,7 +291,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <span>Total Products</span>
 
-                    <h3>486</h3>
+                    <h3>0</h3>
 
                 </div>
 
@@ -292,7 +308,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <span>Active Products</span>
 
-                    <h3>462</h3>
+                    <h3>0</h3>
 
                 </div>
 
@@ -309,7 +325,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <span>Low Stock</span>
 
-                    <h3>18</h3>
+                    <h3>0</h3>
 
                 </div>
 
@@ -326,7 +342,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <span>Out of Stock</span>
 
-                    <h3>6</h3>
+                    <h3>0</h3>
 
                 </div>
 
@@ -336,9 +352,8 @@ if (!isset($_SESSION["user_id"])) {
         </div>
 
 
-
         <!-- =========================
-             PRODUCT TABLE PANEL
+             PRODUCT TABLE
         ========================= -->
 
         <div class="product-panel">
@@ -362,22 +377,30 @@ if (!isset($_SESSION["user_id"])) {
 
                 <select class="filter-select">
 
-                    <option value="">All Categories</option>
-                    <option>Grocery</option>
-                    <option>Rice & Grains</option>
-                    <option>Dairy</option>
-                    <option>Beverages</option>
-                    <option>Cleaning</option>
+                    <option value="">
+                        All Categories
+                    </option>
 
                 </select>
 
 
                 <select class="filter-select">
 
-                    <option value="">All Stock</option>
-                    <option>In Stock</option>
-                    <option>Low Stock</option>
-                    <option>Out of Stock</option>
+                    <option value="">
+                        All Stock
+                    </option>
+
+                    <option value="in-stock">
+                        In Stock
+                    </option>
+
+                    <option value="low-stock">
+                        Low Stock
+                    </option>
+
+                    <option value="out-stock">
+                        Out of Stock
+                    </option>
 
                 </select>
 
@@ -387,7 +410,6 @@ if (!isset($_SESSION["user_id"])) {
                 </button>
 
             </div>
-
 
 
             <!-- TABLE -->
@@ -406,6 +428,12 @@ if (!isset($_SESSION["user_id"])) {
 
                             <th>Category</th>
 
+                            <th>SKU</th>
+
+                            <th>Barcode</th>
+
+                            <th>Unit</th>
+
                             <th>Purchase Price</th>
 
                             <th>Sale Price</th>
@@ -414,7 +442,9 @@ if (!isset($_SESSION["user_id"])) {
 
                             <th>Status</th>
 
-                            <th class="text-end">Action</th>
+                            <th class="text-end">
+                                Action
+                            </th>
 
                         </tr>
 
@@ -423,387 +453,13 @@ if (!isset($_SESSION["user_id"])) {
 
                     <tbody>
 
-
                         <tr>
 
-                            <td>01</td>
-
-                            <td>
-
-                                <div class="product-name">
-
-                                    <div class="product-image">
-                                        CO
-                                    </div>
-
-                                    <div>
-
-                                        <strong>Cooking Oil 5L</strong>
-
-                                        <small>
-                                            SKU: OIL-001
-                                        </small>
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-
-                            <td>
-                                Grocery
-                            </td>
-
-
-                            <td>
-                                ₨ 2,650
-                            </td>
-
-
-                            <td>
-                                ₨ 2,850
-                            </td>
-
-
-                            <td>
-                                <strong>32</strong>
-                            </td>
-
-
-                            <td>
-
-                                <span class="stock-status in-stock">
-                                    In Stock
-                                </span>
-
-                            </td>
-
-
-                            <td class="text-end">
-
-                                <button
-                                    class="action-btn edit"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editProductModal"
-                                >
-                                    Edit
-                                </button>
-
-                                <button
-                                    class="action-btn delete"
-                                >
-                                    Delete
-                                </button>
-
+                            <td colspan="11" class="text-center">
+                                No products added yet.
                             </td>
 
                         </tr>
-
-
-
-                        <tr>
-
-                            <td>02</td>
-
-                            <td>
-
-                                <div class="product-name">
-
-                                    <div class="product-image">
-                                        RI
-                                    </div>
-
-                                    <div>
-
-                                        <strong>Basmati Rice 5kg</strong>
-
-                                        <small>
-                                            SKU: RIC-002
-                                        </small>
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-
-                            <td>
-                                Rice & Grains
-                            </td>
-
-
-                            <td>
-                                ₨ 1,050
-                            </td>
-
-
-                            <td>
-                                ₨ 1,250
-                            </td>
-
-
-                            <td>
-                                <strong>8</strong>
-                            </td>
-
-
-                            <td>
-
-                                <span class="stock-status low-stock">
-                                    Low Stock
-                                </span>
-
-                            </td>
-
-
-                            <td class="text-end">
-
-                                <button
-                                    class="action-btn edit"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editProductModal"
-                                >
-                                    Edit
-                                </button>
-
-                                <button class="action-btn delete">
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        <tr>
-
-                            <td>03</td>
-
-                            <td>
-
-                                <div class="product-name">
-
-                                    <div class="product-image">
-                                        MI
-                                    </div>
-
-                                    <div>
-
-                                        <strong>Milk Pack 1L</strong>
-
-                                        <small>
-                                            SKU: MLK-003
-                                        </small>
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-
-                            <td>
-                                Dairy
-                            </td>
-
-
-                            <td>
-                                ₨ 240
-                            </td>
-
-
-                            <td>
-                                ₨ 280
-                            </td>
-
-
-                            <td>
-                                <strong>3</strong>
-                            </td>
-
-
-                            <td>
-
-                                <span class="stock-status out-stock">
-                                    Out of Stock
-                                </span>
-
-                            </td>
-
-
-                            <td class="text-end">
-
-                                <button
-                                    class="action-btn edit"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editProductModal"
-                                >
-                                    Edit
-                                </button>
-
-                                <button class="action-btn delete">
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        <tr>
-
-                            <td>04</td>
-
-                            <td>
-
-                                <div class="product-name">
-
-                                    <div class="product-image">
-                                        SU
-                                    </div>
-
-                                    <div>
-
-                                        <strong>Surf Excel 1kg</strong>
-
-                                        <small>
-                                            SKU: SUR-004
-                                        </small>
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-
-                            <td>
-                                Cleaning
-                            </td>
-
-
-                            <td>
-                                ₨ 520
-                            </td>
-
-
-                            <td>
-                                ₨ 590
-                            </td>
-
-
-                            <td>
-                                <strong>11</strong>
-                            </td>
-
-
-                            <td>
-
-                                <span class="stock-status low-stock">
-                                    Low Stock
-                                </span>
-
-                            </td>
-
-
-                            <td class="text-end">
-
-                                <button
-                                    class="action-btn edit"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editProductModal"
-                                >
-                                    Edit
-                                </button>
-
-                                <button class="action-btn delete">
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        <tr>
-
-                            <td>05</td>
-
-                            <td>
-
-                                <div class="product-name">
-
-                                    <div class="product-image">
-                                        SA
-                                    </div>
-
-                                    <div>
-
-                                        <strong>National Salt 800g</strong>
-
-                                        <small>
-                                            SKU: SAL-005
-                                        </small>
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-
-                            <td>
-                                Grocery
-                            </td>
-
-
-                            <td>
-                                ₨ 75
-                            </td>
-
-
-                            <td>
-                                ₨ 95
-                            </td>
-
-
-                            <td>
-                                <strong>74</strong>
-                            </td>
-
-
-                            <td>
-
-                                <span class="stock-status in-stock">
-                                    In Stock
-                                </span>
-
-                            </td>
-
-
-                            <td class="text-end">
-
-                                <button
-                                    class="action-btn edit"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editProductModal"
-                                >
-                                    Edit
-                                </button>
-
-                                <button class="action-btn delete">
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
 
                     </tbody>
 
@@ -812,13 +468,12 @@ if (!isset($_SESSION["user_id"])) {
             </div>
 
 
-
             <!-- PAGINATION -->
 
             <div class="table-footer">
 
                 <p>
-                    Showing 1 to 5 of 486 products
+                    Showing 0 products
                 </p>
 
 
@@ -827,33 +482,29 @@ if (!isset($_SESSION["user_id"])) {
                     <ul class="pagination pagination-sm mb-0">
 
                         <li class="page-item disabled">
+
                             <a class="page-link" href="#">
                                 Previous
                             </a>
+
                         </li>
 
+
                         <li class="page-item active">
+
                             <a class="page-link" href="#">
                                 1
                             </a>
+
                         </li>
 
-                        <li class="page-item">
-                            <a class="page-link" href="#">
-                                2
-                            </a>
-                        </li>
 
-                        <li class="page-item">
-                            <a class="page-link" href="#">
-                                3
-                            </a>
-                        </li>
+                        <li class="page-item disabled">
 
-                        <li class="page-item">
                             <a class="page-link" href="#">
                                 Next
                             </a>
+
                         </li>
 
                     </ul>
@@ -867,7 +518,6 @@ if (!isset($_SESSION["user_id"])) {
 
 
     </div>
-
 
 </main>
 
@@ -903,6 +553,7 @@ if (!isset($_SESSION["user_id"])) {
 
                 </div>
 
+
                 <button
                     type="button"
                     class="btn-close"
@@ -916,9 +567,10 @@ if (!isset($_SESSION["user_id"])) {
 
                 <form>
 
-
                     <div class="row g-3">
 
+
+                        <!-- PRODUCT NAME -->
 
                         <div class="col-md-8">
 
@@ -935,6 +587,8 @@ if (!isset($_SESSION["user_id"])) {
                         </div>
 
 
+                        <!-- SKU -->
+
                         <div class="col-md-4">
 
                             <label class="form-label">
@@ -950,6 +604,25 @@ if (!isset($_SESSION["user_id"])) {
                         </div>
 
 
+                        <!-- BARCODE -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Barcode
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                placeholder="Enter barcode"
+                            >
+
+                        </div>
+
+
+                        <!-- CATEGORY -->
+
                         <div class="col-md-6">
 
                             <label class="form-label">
@@ -962,16 +635,12 @@ if (!isset($_SESSION["user_id"])) {
                                     Select category
                                 </option>
 
-                                <option>Grocery</option>
-                                <option>Rice & Grains</option>
-                                <option>Dairy</option>
-                                <option>Beverages</option>
-                                <option>Cleaning</option>
-
                             </select>
 
                         </div>
 
+
+                        <!-- UNIT -->
 
                         <div class="col-md-6">
 
@@ -985,19 +654,38 @@ if (!isset($_SESSION["user_id"])) {
                                     Select unit
                                 </option>
 
-                                <option>Piece</option>
-                                <option>Kg</option>
-                                <option>Gram</option>
-                                <option>Liter</option>
-                                <option>Pack</option>
-                                <option>Dozen</option>
+                                <option value="piece">
+                                    Piece
+                                </option>
+
+                                <option value="kg">
+                                    Kg
+                                </option>
+
+                                <option value="gram">
+                                    Gram
+                                </option>
+
+                                <option value="liter">
+                                    Liter
+                                </option>
+
+                                <option value="pack">
+                                    Pack
+                                </option>
+
+                                <option value="dozen">
+                                    Dozen
+                                </option>
 
                             </select>
 
                         </div>
 
 
-                        <div class="col-md-4">
+                        <!-- PURCHASE PRICE -->
+
+                        <div class="col-md-6">
 
                             <label class="form-label">
                                 Purchase Price
@@ -1006,13 +694,17 @@ if (!isset($_SESSION["user_id"])) {
                             <input
                                 type="number"
                                 class="form-control"
-                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
                             >
 
                         </div>
 
 
-                        <div class="col-md-4">
+                        <!-- SALE PRICE -->
+
+                        <div class="col-md-6">
 
                             <label class="form-label">
                                 Sale Price
@@ -1021,44 +713,77 @@ if (!isset($_SESSION["user_id"])) {
                             <input
                                 type="number"
                                 class="form-control"
-                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
                             >
 
                         </div>
 
 
-                        <div class="col-md-4">
+                        <!-- STOCK -->
+
+                        <div class="col-md-6">
 
                             <label class="form-label">
-                                Opening Stock
+                                Stock Quantity
                             </label>
 
                             <input
                                 type="number"
                                 class="form-control"
+                                step="0.01"
+                                min="0"
                                 placeholder="0"
                             >
 
                         </div>
 
 
-                        <div class="col-12">
+                        <!-- LOW STOCK LIMIT -->
+
+                        <div class="col-md-6">
 
                             <label class="form-label">
-                                Description
+                                Low Stock Limit
                             </label>
 
-                            <textarea
+                            <input
+                                type="number"
                                 class="form-control"
-                                rows="3"
-                                placeholder="Optional product description"
-                            ></textarea>
+                                step="0.01"
+                                min="0"
+                                value="5"
+                                placeholder="5"
+                            >
+
+                        </div>
+
+
+                        <!-- STATUS -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Status
+                            </label>
+
+                            <select class="form-select">
+
+                                <option value="active" selected>
+                                    Active
+                                </option>
+
+                                <option value="inactive">
+                                    Inactive
+                                </option>
+
+                            </select>
 
                         </div>
 
 
                     </div>
-
 
                 </form>
 
@@ -1074,6 +799,7 @@ if (!isset($_SESSION["user_id"])) {
                 >
                     Cancel
                 </button>
+
 
                 <button
                     type="button"
@@ -1123,6 +849,7 @@ if (!isset($_SESSION["user_id"])) {
 
                 </div>
 
+
                 <button
                     type="button"
                     class="btn-close"
@@ -1148,7 +875,7 @@ if (!isset($_SESSION["user_id"])) {
                             <input
                                 type="text"
                                 class="form-control"
-                                value="Cooking Oil 5L"
+                                placeholder="Enter product name"
                             >
 
                         </div>
@@ -1163,7 +890,22 @@ if (!isset($_SESSION["user_id"])) {
                             <input
                                 type="text"
                                 class="form-control"
-                                value="OIL-001"
+                                placeholder="Enter SKU"
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Barcode
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                placeholder="Enter barcode"
                             >
 
                         </div>
@@ -1178,13 +920,8 @@ if (!isset($_SESSION["user_id"])) {
                             <select class="form-select">
 
                                 <option selected>
-                                    Grocery
+                                    Select category
                                 </option>
-
-                                <option>Rice & Grains</option>
-                                <option>Dairy</option>
-                                <option>Beverages</option>
-                                <option>Cleaning</option>
 
                             </select>
 
@@ -1199,22 +936,36 @@ if (!isset($_SESSION["user_id"])) {
 
                             <select class="form-select">
 
-                                <option selected>
+                                <option value="piece">
+                                    Piece
+                                </option>
+
+                                <option value="kg">
+                                    Kg
+                                </option>
+
+                                <option value="gram">
+                                    Gram
+                                </option>
+
+                                <option value="liter">
                                     Liter
                                 </option>
 
-                                <option>Piece</option>
-                                <option>Kg</option>
-                                <option>Gram</option>
-                                <option>Pack</option>
-                                <option>Dozen</option>
+                                <option value="pack">
+                                    Pack
+                                </option>
+
+                                <option value="dozen">
+                                    Dozen
+                                </option>
 
                             </select>
 
                         </div>
 
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
 
                             <label class="form-label">
                                 Purchase Price
@@ -1223,13 +974,15 @@ if (!isset($_SESSION["user_id"])) {
                             <input
                                 type="number"
                                 class="form-control"
-                                value="2650"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
                             >
 
                         </div>
 
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
 
                             <label class="form-label">
                                 Sale Price
@@ -1238,23 +991,65 @@ if (!isset($_SESSION["user_id"])) {
                             <input
                                 type="number"
                                 class="form-control"
-                                value="2850"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
                             >
 
                         </div>
 
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
 
                             <label class="form-label">
-                                Current Stock
+                                Stock Quantity
                             </label>
 
                             <input
                                 type="number"
                                 class="form-control"
-                                value="32"
+                                step="0.01"
+                                min="0"
+                                placeholder="0"
                             >
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Low Stock Limit
+                            </label>
+
+                            <input
+                                type="number"
+                                class="form-control"
+                                step="0.01"
+                                min="0"
+                                placeholder="5"
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Status
+                            </label>
+
+                            <select class="form-select">
+
+                                <option value="active">
+                                    Active
+                                </option>
+
+                                <option value="inactive">
+                                    Inactive
+                                </option>
+
+                            </select>
 
                         </div>
 
@@ -1275,6 +1070,7 @@ if (!isset($_SESSION["user_id"])) {
                 >
                     Cancel
                 </button>
+
 
                 <button
                     type="button"
@@ -1302,4 +1098,5 @@ if (!isset($_SESSION["user_id"])) {
 
 
 </body>
+
 </html>
