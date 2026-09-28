@@ -17,24 +17,6 @@ $_SESSION = [];
 */
 
 session_destroy();
-
-/*
-|--------------------------------------------------------------------------
-| Prevent browser from showing cached protected pages
-|--------------------------------------------------------------------------
-*/
-
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: 0");
-
-/*
-|--------------------------------------------------------------------------
-| Redirect to login
-|--------------------------------------------------------------------------
-*/
-
-header("Location: index.php", true, 303);
-exit;
+ header("Location: login.php");
 
 ?>

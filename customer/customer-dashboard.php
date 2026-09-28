@@ -1,3 +1,7 @@
+<?php
+session_start();
+$name = $_SESSION["user_name"];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -870,19 +874,14 @@
                 <div class="profile">
 
                     <div class="profile-avatar">
-                        CU
+                        <?php
+                        echo $name[0].$name[1];
+                        ?>
                     </div>
 
                     <div class="profile-info">
-
-                        <strong>
-                            Customer
-                        </strong>
-
-                        <span>
-                            Customer Account
-                        </span>
-
+                        <strong><?php echo $name ?></strong>
+                        <span><?php echo $_SESSION["role"] ?></span>
                     </div>
 
                 </div>

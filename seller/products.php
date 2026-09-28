@@ -10,6 +10,7 @@ if (!isset($_SESSION["user_id"])) {
     header("Location: ../index.php");
     exit;
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -562,46 +563,51 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
+        <form action="products.php" method="POST">
 
             <div class="modal-body">
 
                 <form>
 
-                    <div class="row g-3">
 
+        <div class="row g-3">
 
-                        <!-- PRODUCT NAME -->
 
                         <div class="col-md-8">
 
-                            <label class="form-label">
-                                Product Name
-                            </label>
+                <label class="form-label">
+                    Product Name
+                </label>
 
-                            <input
-                                type="text"
-                                class="form-control"
-                                placeholder="Enter product name"
-                            >
+                <input
+                    type="text"
+                    name="product_name"
+                    class="form-control"
+                    placeholder="Enter product name"
+                    required
+                >
 
-                        </div>
+            </div>
 
 
                         <!-- SKU -->
 
-                        <div class="col-md-4">
+            <!-- SKU -->
+            <div class="col-md-4">
 
-                            <label class="form-label">
-                                SKU
-                            </label>
+                <label class="form-label">
+                    SKU
+                </label>
 
-                            <input
-                                type="text"
-                                class="form-control"
-                                placeholder="e.g. PRD-001"
-                            >
+                <input
+                    type="text"
+                    name="sku"
+                    class="form-control"
+                    placeholder="e.g. PRD-001"
+                    required
+                >
 
-                        </div>
+            </div>
 
 
                         <!-- BARCODE -->
@@ -623,174 +629,134 @@ if (!isset($_SESSION["user_id"])) {
 
                         <!-- CATEGORY -->
 
-                        <div class="col-md-6">
+            <!-- Category -->
+            <div class="col-md-6">
 
-                            <label class="form-label">
-                                Category
-                            </label>
+                <label class="form-label">
+                    Category
+                </label>
 
-                            <select class="form-select">
+                <select
+                    name="category"
+                    class="form-select"
+                    required
+                >
 
-                                <option selected>
-                                    Select category
-                                </option>
+                    <option value="">
+                        Select category
+                    </option>
+
+                                <option>Grocery</option>
+                                <option>Rice & Grains</option>
+                                <option>Dairy</option>
+                                <option>Beverages</option>
+                                <option>Cleaning</option>
 
                             </select>
 
-                        </div>
+            </div>
 
 
                         <!-- UNIT -->
 
-                        <div class="col-md-6">
+            <!-- Unit -->
+            <div class="col-md-6">
 
-                            <label class="form-label">
-                                Unit
-                            </label>
+                <label class="form-label">
+                    Unit
+                </label>
 
-                            <select class="form-select">
+                <select
+                    name="unit"
+                    class="form-select"
+                    required
+                >
 
-                                <option selected>
-                                    Select unit
-                                </option>
+                    <option value="">
+                        Select unit
+                    </option>
 
-                                <option value="piece">
-                                    Piece
-                                </option>
+                                <option>Piece</option>
+                                <option>Kg</option>
+                                <option>Gram</option>
+                                <option>Liter</option>
+                                <option>Pack</option>
+                                <option>Dozen</option>
 
-                                <option value="kg">
-                                    Kg
-                                </option>
+                </select>
 
-                                <option value="gram">
-                                    Gram
-                                </option>
-
-                                <option value="liter">
-                                    Liter
-                                </option>
-
-                                <option value="pack">
-                                    Pack
-                                </option>
-
-                                <option value="dozen">
-                                    Dozen
-                                </option>
-
-                            </select>
-
-                        </div>
+            </div>
 
 
-                        <!-- PURCHASE PRICE -->
+                        <div class="col-md-4">
 
-                        <div class="col-md-6">
-
-                            <label class="form-label">
-                                Purchase Price
-                            </label>
+                <label class="form-label">
+                    Purchase Price
+                </label>
 
                             <input
                                 type="number"
                                 class="form-control"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                            >
-
-                        </div>
-
-
-                        <!-- SALE PRICE -->
-
-                        <div class="col-md-6">
-
-                            <label class="form-label">
-                                Sale Price
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                            >
-
-                        </div>
-
-
-                        <!-- STOCK -->
-
-                        <div class="col-md-6">
-
-                            <label class="form-label">
-                                Stock Quantity
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                step="0.01"
-                                min="0"
                                 placeholder="0"
                             >
 
-                        </div>
+            </div>
 
 
-                        <!-- LOW STOCK LIMIT -->
+                        <div class="col-md-4">
 
-                        <div class="col-md-6">
+                <label class="form-label">
+                    Sale Price
+                </label>
+
+                            <input
+                                type="number"
+                                class="form-control"
+                                placeholder="0"
+                            >
+
+            </div>
+
+
+                        <div class="col-md-4">
 
                             <label class="form-label">
-                                Low Stock Limit
+                                Opening Stock
                             </label>
 
                             <input
                                 type="number"
                                 class="form-control"
-                                step="0.01"
-                                min="0"
-                                value="5"
-                                placeholder="5"
+                                placeholder="0"
                             >
 
-                        </div>
+            </div>
 
 
-                        <!-- STATUS -->
-
-                        <div class="col-md-6">
+                        <div class="col-12">
 
                             <label class="form-label">
-                                Status
+                                Description
                             </label>
 
-                            <select class="form-select">
+                            <textarea
+                                class="form-control"
+                                rows="3"
+                                placeholder="Optional product description"
+                            ></textarea>
 
-                                <option value="active" selected>
-                                    Active
-                                </option>
-
-                                <option value="inactive">
-                                    Inactive
-                                </option>
-
-                            </select>
-
-                        </div>
+            </div>
 
 
                     </div>
+
 
                 </form>
 
             </div>
 
 
-            <div class="modal-footer">
+    <div class="modal-footer">
 
                 <button
                     type="button"
@@ -800,15 +766,17 @@ if (!isset($_SESSION["user_id"])) {
                     Cancel
                 </button>
 
+        <button
+            type="submit"
+            name="add_product"
+            class="btn add-product-btn"
+        >
+            Save Product
+        </button>
 
-                <button
-                    type="button"
-                    class="btn add-product-btn"
-                >
-                    Save Product
-                </button>
+    </div>
 
-            </div>
+</form>
 
 
         </div>
