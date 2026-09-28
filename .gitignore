@@ -4,3 +4,4 @@
 *.db
 *.mdb
 *.accdb
+config/database.php
