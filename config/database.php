@@ -3,7 +3,7 @@
 $host = "localhost";
 $user = "root";
 $password = "Admin";
-$database = "grocery_management_system_db";
+$database = "grocery_management";
 
 $conn = mysqli_connect($host, $user, $password, $database);
 
