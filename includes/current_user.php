@@ -29,7 +29,8 @@ function getCurrentUser($conn)
                 role,
                 status,
                 profile_photo,
-                created_at
+                created_at,
+                updated_at
             FROM users
             WHERE id = ?
             AND shop_id = ?

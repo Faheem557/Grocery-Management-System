@@ -66,15 +66,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         // Check password
                         if (password_verify($password, $user["password"])) {
 
-                    $_SESSION["user_id"] = $user["id"];
-                    $_SESSION["shop_id"] = $user["shop_id"];
-                    $_SESSION["user_name"] = $user["name"];
-                    $_SESSION["role"] = $user["role"];
-                    //upload from talha
-                    
-                   header("Location: success_login.php");
-                    exit;
-                }else{
+                            // Store user information in session
+                            $_SESSION["user_id"] = $user["id"];
+                            $_SESSION["shop_id"] = $user["shop_id"];
+                            $_SESSION["user_name"] = $user["name"];
+                            $_SESSION["username"] = $user["username"];
+                            $_SESSION["role"] = $user["role"];
+                            $_SESSION["status"] = $user["status"];
+                            $_SESSION["photo"] = $user["profile_photo"];
+
+                            // Login successful
+                            header("Location: success_login.php");
+                            exit;
+
+                        } else {
 
                             $form_error = "Invalid username or password.";
                         }

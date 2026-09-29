@@ -1,50 +1,142 @@
 <?php
-
 session_start();
 
+require_once "../config/database.php";
+
+/* Prevent old cached page */
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 header("Expires: 0");
 
-if (!isset($_SESSION["user_id"])) {
+/* Check login */
+if (!isset($_SESSION["user_id"], $_SESSION["shop_id"])) {
     header("Location: ../index.php");
     exit;
 }
 
-?>
+$user_id = (int) $_SESSION["user_id"];
+$shop_id = (int) $_SESSION["shop_id"];
 
+/* Get latest user data from database */
+$sql = "SELECT id, name, username, role, status, profile_photo
+        FROM users
+        WHERE id = ?
+        AND shop_id = ?
+        LIMIT 1";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+if (!$stmt) {
+    die("Database query failed.");
+}
+
+mysqli_stmt_bind_param($stmt, "ii", $user_id, $shop_id);
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+$user = mysqli_fetch_assoc($result);
+
+if (!$user) {
+    session_destroy();
+    header("Location: ../index.php");
+    exit;
+}
+
+$name = $user["name"] ?? "User";
+$role = $user["role"] ?? "seller";
+$profile_photo = $user["profile_photo"] ?? "";
+
+if ($name === "") {
+    header("Location: ../index.php", true, 303);
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Products | Grocery Management System</title>
 
-    <!-- Bootstrap -->
+    <!-- Bootstrap CSS -->
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
 
-    <!-- Products CSS -->
+    <!-- Your Products CSS -->
     <link rel="stylesheet" href="../assets/css/products.css">
 
+    <style>
+        /* PAGE LOADER */
+        #page-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        #page-loader .loader-spinner {
+            width: 45px;
+            height: 45px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #198754;
+            border-radius: 50%;
+            animation: loaderSpin 0.8s linear infinite;
+        }
+
+        #page-loader p {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        @keyframes loaderSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Profile photo */
+        .profile-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .dashboard-profile-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+    </style>
 </head>
 
 <body>
 
+<!-- PAGE LOADER -->
+<div id="page-loader">
+    <div class="loader-spinner"></div>
+    <p>Loading Products...</p>
+</div>
 
-<!-- =========================
-     SIDEBAR
-========================= -->
-
+<!-- SIDEBAR -->
 <aside class="sidebar">
 
     <div class="brand">
-
         <img
             src="../assets/IMAGES/mainLogo.png"
             alt="Grocery Management System"
@@ -54,9 +146,7 @@ if (!isset($_SESSION["user_id"])) {
             <h2>Grocery Manager</h2>
             <span>Seller Panel</span>
         </div>
-
     </div>
-
 
     <nav class="sidebar-nav">
 
@@ -82,7 +172,6 @@ if (!isset($_SESSION["user_id"])) {
             Stock
         </a>
 
-
         <p class="nav-title">SALES</p>
 
         <a href="new-sale.php" class="nav-link">
@@ -99,7 +188,6 @@ if (!isset($_SESSION["user_id"])) {
             <span class="nav-icon">▧</span>
             Invoices
         </a>
-
 
         <p class="nav-title">CUSTOMERS</p>
 
@@ -118,7 +206,6 @@ if (!isset($_SESSION["user_id"])) {
             Payments
         </a>
 
-
         <p class="nav-title">PURCHASE</p>
 
         <a href="suppliers.php" class="nav-link">
@@ -130,7 +217,6 @@ if (!isset($_SESSION["user_id"])) {
             <span class="nav-icon">↓</span>
             Purchases
         </a>
-
 
         <p class="nav-title">BUSINESS</p>
 
@@ -151,7 +237,6 @@ if (!isset($_SESSION["user_id"])) {
 
     </nav>
 
-
     <div class="sidebar-bottom">
 
         <a href="#" class="nav-link">
@@ -168,44 +253,31 @@ if (!isset($_SESSION["user_id"])) {
 
 </aside>
 
-
-<!-- =========================
-     MAIN CONTENT
-========================= -->
-
+<!-- MAIN CONTENT -->
 <main class="main-content">
 
-
     <!-- TOPBAR -->
-
     <header class="topbar">
 
         <div class="topbar-left">
 
-            <button class="menu-button">
+            <button class="menu-button" type="button">
                 ☰
             </button>
 
             <div>
-
                 <h1>Products</h1>
-
-                <p>
-                    Manage your grocery products
-                </p>
-
+                <p>Manage your grocery products</p>
             </div>
 
         </div>
 
-
         <div class="topbar-right">
 
-            <button class="notification-button">
+            <button class="notification-button" type="button">
                 🔔
                 <span class="notification-dot"></span>
             </button>
-
 
             <div class="profile">
 
@@ -213,25 +285,32 @@ if (!isset($_SESSION["user_id"])) {
 
                     <div class="profile-avatar">
 
-                        <?php
-                        echo strtoupper(
-                            substr($_SESSION["user_name"] ?? "U", 0, 2)
-                        );
-                        ?>
+                        <?php if (!empty($profile_photo)): ?>
+
+                            <img
+                                src="../<?php echo htmlspecialchars($profile_photo); ?>"
+                                alt="Profile Photo"
+                                class="dashboard-profile-photo"
+                            >
+
+                        <?php else: ?>
+
+                            <?php echo strtoupper(substr($name, 0, 2)); ?>
+
+                        <?php endif; ?>
 
                     </div>
 
                 </a>
 
-
                 <div class="profile-info">
 
                     <strong>
-                        <?php echo htmlspecialchars($_SESSION["user_name"] ?? "User"); ?>
+                        <?php echo htmlspecialchars($name); ?>
                     </strong>
 
                     <span>
-                        <?php echo htmlspecialchars($_SESSION["role"] ?? "seller"); ?>
+                        <?php echo htmlspecialchars($role); ?>
                     </span>
 
                 </div>
@@ -242,26 +321,15 @@ if (!isset($_SESSION["user_id"])) {
 
     </header>
 
-
     <!-- PAGE CONTENT -->
-
     <div class="page-content">
-
-
-        <!-- PAGE HEADER -->
 
         <div class="page-header">
 
             <div>
-
                 <h2>Product Management</h2>
-
-                <p>
-                    Add, update and manage products in your store.
-                </p>
-
+                <p>Add, update and manage products in your store.</p>
             </div>
-
 
             <button
                 type="button"
@@ -274,192 +342,99 @@ if (!isset($_SESSION["user_id"])) {
 
         </div>
 
-
-        <!-- =========================
-             SUMMARY CARDS
-        ========================= -->
-
+        <!-- SUMMARY CARDS -->
         <div class="summary-grid">
 
-
             <div class="summary-card">
-
-                <div class="summary-icon total">
-                    ▣
-                </div>
-
+                <div class="summary-icon total">▣</div>
                 <div>
-
                     <span>Total Products</span>
-
                     <h3>0</h3>
-
                 </div>
-
             </div>
 
-
             <div class="summary-card">
-
-                <div class="summary-icon active">
-                    ✓
-                </div>
-
+                <div class="summary-icon active">✓</div>
                 <div>
-
                     <span>Active Products</span>
-
                     <h3>0</h3>
-
                 </div>
-
             </div>
 
-
             <div class="summary-card">
-
-                <div class="summary-icon low">
-                    !
-                </div>
-
+                <div class="summary-icon low">!</div>
                 <div>
-
                     <span>Low Stock</span>
-
                     <h3>0</h3>
-
                 </div>
-
             </div>
-
 
             <div class="summary-card">
-
-                <div class="summary-icon out">
-                    ×
-                </div>
-
+                <div class="summary-icon out">×</div>
                 <div>
-
                     <span>Out of Stock</span>
-
                     <h3>0</h3>
-
                 </div>
-
             </div>
-
 
         </div>
 
-
-        <!-- =========================
-             PRODUCT TABLE
-        ========================= -->
-
+        <!-- PRODUCT PANEL -->
         <div class="product-panel">
-
-
-            <!-- FILTER AREA -->
 
             <div class="filter-area">
 
                 <div class="search-box">
-
                     <span>⌕</span>
-
                     <input
                         type="text"
                         placeholder="Search product..."
                     >
-
                 </div>
 
-
                 <select class="filter-select">
-
-                    <option value="">
-                        All Categories
-                    </option>
-
+                    <option value="">All Categories</option>
                 </select>
 
-
                 <select class="filter-select">
-
-                    <option value="">
-                        All Stock
-                    </option>
-
-                    <option value="in-stock">
-                        In Stock
-                    </option>
-
-                    <option value="low-stock">
-                        Low Stock
-                    </option>
-
-                    <option value="out-stock">
-                        Out of Stock
-                    </option>
-
+                    <option value="">All Stock</option>
+                    <option value="in-stock">In Stock</option>
+                    <option value="low-stock">Low Stock</option>
+                    <option value="out-stock">Out of Stock</option>
                 </select>
 
-
-                <button class="filter-btn">
+                <button class="filter-btn" type="button">
                     Filter
                 </button>
 
             </div>
-
-
-            <!-- TABLE -->
 
             <div class="table-responsive">
 
                 <table class="table product-table align-middle">
 
                     <thead>
-
                         <tr>
-
                             <th>#</th>
-
                             <th>Product</th>
-
                             <th>Category</th>
-
                             <th>SKU</th>
-
                             <th>Barcode</th>
-
                             <th>Unit</th>
-
                             <th>Purchase Price</th>
-
                             <th>Sale Price</th>
-
                             <th>Stock</th>
-
                             <th>Status</th>
-
-                            <th class="text-end">
-                                Action
-                            </th>
-
+                            <th class="text-end">Action</th>
                         </tr>
-
                     </thead>
-
 
                     <tbody>
 
                         <tr>
-
                             <td colspan="11" class="text-center">
                                 No products added yet.
                             </td>
-
                         </tr>
 
                     </tbody>
@@ -468,44 +443,24 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
-
-            <!-- PAGINATION -->
-
             <div class="table-footer">
 
-                <p>
-                    Showing 0 products
-                </p>
-
+                <p>Showing 0 products</p>
 
                 <nav>
 
                     <ul class="pagination pagination-sm mb-0">
 
                         <li class="page-item disabled">
-
-                            <a class="page-link" href="#">
-                                Previous
-                            </a>
-
+                            <a class="page-link" href="#">Previous</a>
                         </li>
-
 
                         <li class="page-item active">
-
-                            <a class="page-link" href="#">
-                                1
-                            </a>
-
+                            <a class="page-link" href="#">1</a>
                         </li>
 
-
                         <li class="page-item disabled">
-
-                            <a class="page-link" href="#">
-                                Next
-                            </a>
-
+                            <a class="page-link" href="#">Next</a>
                         </li>
 
                     </ul>
@@ -514,20 +469,13 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
-
         </div>
-
 
     </div>
 
 </main>
 
-
-
-<!-- =========================
-     ADD PRODUCT MODAL
-========================= -->
-
+<!-- ADD PRODUCT MODAL -->
 <div
     class="modal fade"
     id="addProductModal"
@@ -539,21 +487,12 @@ if (!isset($_SESSION["user_id"])) {
 
         <div class="modal-content">
 
-
             <div class="modal-header">
 
                 <div>
-
-                    <h5 class="modal-title">
-                        Add New Product
-                    </h5>
-
-                    <small>
-                        Enter product information below
-                    </small>
-
+                    <h5 class="modal-title">Add New Product</h5>
+                    <small>Enter product information below</small>
                 </div>
-
 
                 <button
                     type="button"
@@ -563,221 +502,158 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
-        <form action="products.php" method="POST">
+            <!-- IMPORTANT: ONLY ONE FORM -->
+            <form action="products.php" method="POST">
 
-            <div class="modal-body">
+                <div class="modal-body">
 
-                <form>
-
-
-        <div class="row g-3">
-
+                    <div class="row g-3">
 
                         <div class="col-md-8">
-
-                <label class="form-label">
-                    Product Name
-                </label>
-
-                <input
-                    type="text"
-                    name="product_name"
-                    class="form-control"
-                    placeholder="Enter product name"
-                    required
-                >
-
-            </div>
-
-
-                        <!-- SKU -->
-
-            <!-- SKU -->
-            <div class="col-md-4">
-
-                <label class="form-label">
-                    SKU
-                </label>
-
-                <input
-                    type="text"
-                    name="sku"
-                    class="form-control"
-                    placeholder="e.g. PRD-001"
-                    required
-                >
-
-            </div>
-
-
-                        <!-- BARCODE -->
-
-                        <div class="col-md-6">
-
-                            <label class="form-label">
-                                Barcode
-                            </label>
+                            <label class="form-label">Product Name</label>
 
                             <input
                                 type="text"
+                                name="product_name"
+                                class="form-control"
+                                placeholder="Enter product name"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">SKU</label>
+
+                            <input
+                                type="text"
+                                name="sku"
+                                class="form-control"
+                                placeholder="e.g. PRD-001"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Barcode</label>
+
+                            <input
+                                type="text"
+                                name="barcode"
                                 class="form-control"
                                 placeholder="Enter barcode"
                             >
-
                         </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
 
-                        <!-- CATEGORY -->
-
-            <!-- Category -->
-            <div class="col-md-6">
-
-                <label class="form-label">
-                    Category
-                </label>
-
-                <select
-                    name="category"
-                    class="form-select"
-                    required
-                >
-
-                    <option value="">
-                        Select category
-                    </option>
-
+                            <select
+                                name="category"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">Select category</option>
                                 <option>Grocery</option>
                                 <option>Rice & Grains</option>
                                 <option>Dairy</option>
                                 <option>Beverages</option>
                                 <option>Cleaning</option>
-
                             </select>
+                        </div>
 
-            </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Unit</label>
 
-
-                        <!-- UNIT -->
-
-            <!-- Unit -->
-            <div class="col-md-6">
-
-                <label class="form-label">
-                    Unit
-                </label>
-
-                <select
-                    name="unit"
-                    class="form-select"
-                    required
-                >
-
-                    <option value="">
-                        Select unit
-                    </option>
-
+                            <select
+                                name="unit"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">Select unit</option>
                                 <option>Piece</option>
                                 <option>Kg</option>
                                 <option>Gram</option>
                                 <option>Liter</option>
                                 <option>Pack</option>
                                 <option>Dozen</option>
-
-                </select>
-
-            </div>
-
+                            </select>
+                        </div>
 
                         <div class="col-md-4">
-
-                <label class="form-label">
-                    Purchase Price
-                </label>
+                            <label class="form-label">Purchase Price</label>
 
                             <input
                                 type="number"
+                                name="purchase_price"
                                 class="form-control"
-                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
                             >
-
-            </div>
-
+                        </div>
 
                         <div class="col-md-4">
-
-                <label class="form-label">
-                    Sale Price
-                </label>
+                            <label class="form-label">Sale Price</label>
 
                             <input
                                 type="number"
+                                name="sale_price"
                                 class="form-control"
-                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
                             >
-
-            </div>
-
+                        </div>
 
                         <div class="col-md-4">
-
-                            <label class="form-label">
-                                Opening Stock
-                            </label>
+                            <label class="form-label">Opening Stock</label>
 
                             <input
                                 type="number"
+                                name="opening_stock"
                                 class="form-control"
+                                step="0.01"
+                                min="0"
                                 placeholder="0"
                             >
-
-            </div>
-
+                        </div>
 
                         <div class="col-12">
-
-                            <label class="form-label">
-                                Description
-                            </label>
+                            <label class="form-label">Description</label>
 
                             <textarea
+                                name="description"
                                 class="form-control"
                                 rows="3"
                                 placeholder="Optional product description"
                             ></textarea>
-
-            </div>
-
+                        </div>
 
                     </div>
 
+                </div>
 
-                </form>
+                <div class="modal-footer">
 
-            </div>
+                    <button
+                        type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
 
+                    <button
+                        type="submit"
+                        name="add_product"
+                        class="btn add-product-btn"
+                    >
+                        Save Product
+                    </button>
 
-    <div class="modal-footer">
+                </div>
 
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
-
-        <button
-            type="submit"
-            name="add_product"
-            class="btn add-product-btn"
-        >
-            Save Product
-        </button>
-
-    </div>
-
-</form>
-
+            </form>
 
         </div>
 
@@ -785,12 +661,7 @@ if (!isset($_SESSION["user_id"])) {
 
 </div>
 
-
-
-<!-- =========================
-     EDIT PRODUCT MODAL
-========================= -->
-
+<!-- EDIT PRODUCT MODAL -->
 <div
     class="modal fade"
     id="editProductModal"
@@ -802,21 +673,12 @@ if (!isset($_SESSION["user_id"])) {
 
         <div class="modal-content">
 
-
             <div class="modal-header">
 
                 <div>
-
-                    <h5 class="modal-title">
-                        Edit Product
-                    </h5>
-
-                    <small>
-                        Update product information
-                    </small>
-
+                    <h5 class="modal-title">Edit Product</h5>
+                    <small>Update product information</small>
                 </div>
-
 
                 <button
                     type="button"
@@ -826,118 +688,65 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
-
             <div class="modal-body">
 
                 <form>
 
                     <div class="row g-3">
 
-
                         <div class="col-md-8">
-
-                            <label class="form-label">
-                                Product Name
-                            </label>
+                            <label class="form-label">Product Name</label>
 
                             <input
                                 type="text"
                                 class="form-control"
                                 placeholder="Enter product name"
                             >
-
                         </div>
 
-
                         <div class="col-md-4">
-
-                            <label class="form-label">
-                                SKU
-                            </label>
+                            <label class="form-label">SKU</label>
 
                             <input
                                 type="text"
                                 class="form-control"
                                 placeholder="Enter SKU"
                             >
-
                         </div>
 
-
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Barcode
-                            </label>
+                            <label class="form-label">Barcode</label>
 
                             <input
                                 type="text"
                                 class="form-control"
                                 placeholder="Enter barcode"
                             >
-
                         </div>
 
-
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Category
-                            </label>
+                            <label class="form-label">Category</label>
 
                             <select class="form-select">
-
-                                <option selected>
-                                    Select category
-                                </option>
-
+                                <option selected>Select category</option>
                             </select>
-
                         </div>
 
-
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Unit
-                            </label>
+                            <label class="form-label">Unit</label>
 
                             <select class="form-select">
-
-                                <option value="piece">
-                                    Piece
-                                </option>
-
-                                <option value="kg">
-                                    Kg
-                                </option>
-
-                                <option value="gram">
-                                    Gram
-                                </option>
-
-                                <option value="liter">
-                                    Liter
-                                </option>
-
-                                <option value="pack">
-                                    Pack
-                                </option>
-
-                                <option value="dozen">
-                                    Dozen
-                                </option>
-
+                                <option>Piece</option>
+                                <option>Kg</option>
+                                <option>Gram</option>
+                                <option>Liter</option>
+                                <option>Pack</option>
+                                <option>Dozen</option>
                             </select>
-
                         </div>
 
-
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Purchase Price
-                            </label>
+                            <label class="form-label">Purchase Price</label>
 
                             <input
                                 type="number"
@@ -946,15 +755,10 @@ if (!isset($_SESSION["user_id"])) {
                                 min="0"
                                 placeholder="0.00"
                             >
-
                         </div>
 
-
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Sale Price
-                            </label>
+                            <label class="form-label">Sale Price</label>
 
                             <input
                                 type="number"
@@ -963,15 +767,10 @@ if (!isset($_SESSION["user_id"])) {
                                 min="0"
                                 placeholder="0.00"
                             >
-
                         </div>
 
-
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Stock Quantity
-                            </label>
+                            <label class="form-label">Stock Quantity</label>
 
                             <input
                                 type="number"
@@ -980,15 +779,10 @@ if (!isset($_SESSION["user_id"])) {
                                 min="0"
                                 placeholder="0"
                             >
-
                         </div>
 
-
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Low Stock Limit
-                            </label>
+                            <label class="form-label">Low Stock Limit</label>
 
                             <input
                                 type="number"
@@ -997,37 +791,22 @@ if (!isset($_SESSION["user_id"])) {
                                 min="0"
                                 placeholder="5"
                             >
-
                         </div>
-
 
                         <div class="col-md-6">
-
-                            <label class="form-label">
-                                Status
-                            </label>
+                            <label class="form-label">Status</label>
 
                             <select class="form-select">
-
-                                <option value="active">
-                                    Active
-                                </option>
-
-                                <option value="inactive">
-                                    Inactive
-                                </option>
-
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
                             </select>
-
                         </div>
-
 
                     </div>
 
                 </form>
 
             </div>
-
 
             <div class="modal-footer">
 
@@ -1039,7 +818,6 @@ if (!isset($_SESSION["user_id"])) {
                     Cancel
                 </button>
 
-
                 <button
                     type="button"
                     class="btn add-product-btn"
@@ -1049,22 +827,32 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
-
         </div>
 
     </div>
 
 </div>
 
-
-
 <!-- Bootstrap JS -->
-
 <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
+
+<!-- Loader control -->
+<script>
+    window.addEventListener("load", function () {
+        const loader = document.getElementById("page-loader");
+
+        if (loader) {
+            loader.style.opacity = "0";
+            loader.style.transition = "opacity 0.25s ease";
+
+            setTimeout(function () {
+                loader.style.display = "none";
+            }, 250);
+        }
+    });
 </script>
 
-
 </body>
-
 </html>

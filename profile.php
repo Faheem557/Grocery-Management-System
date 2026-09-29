@@ -54,9 +54,10 @@ $role = $user["role"] ?? "";
 $status = $user["status"] ?? "";
 $profile_photo = $user["profile_photo"] ?? "";
 $created_at = $user["created_at"] ?? "";
+$updated_at = $user["updated_at"] ?? "";
 
 $initials = getUserInitials($name);
-$photo_url = getProfilePhotoUrl($profile_photo);
+$photo_url = !empty($profile_photo) ? ltrim($profile_photo, "/") : "";
 
 $success_message = "";
 $error_message = "";
@@ -280,7 +281,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_profile"])) {
                     username = ?,
                     phone = ?,
                     email = ?,
-                    profile_photo = ?
+                    profile_photo = ?,
+                    updated_at = NOW()
                 WHERE id = ?
                 AND shop_id = ?
                 LIMIT 1";
@@ -289,7 +291,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_profile"])) {
 
         if (!$stmt) {
 
-            $error_message = "Database update failed.";
+           $error_message = "Database update failed: " . mysqli_error($conn);
 
         } else {
 
@@ -359,9 +361,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_profile"])) {
                 $status = $user["status"];
                 $profile_photo = $user["profile_photo"];
                 $created_at = $user["created_at"];
+                $updated_at = $user["updated_at"];
 
                 $initials = getUserInitials($name);
-                $photo_url = getProfilePhotoUrl($profile_photo);
+                $photo_url = !empty($profile_photo) ? ltrim($profile_photo, "/") : "";
 
                 $success_message = "Profile updated successfully.";
 
@@ -466,7 +469,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_profile"])) {
                 <?php if ($photo_url !== ""): ?>
 
                     <img
-                        src="<?php echo htmlspecialchars($photo_url); ?>"
+                        src="<?php echo htmlspecialchars($photo_url); ?>?v=<?php echo time(); ?>"
                         class="profile-photo"
                         id="mainProfilePhoto"
                         alt="Profile Photo"
@@ -633,6 +636,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_profile"])) {
 
             </div>
 
+            <div class="info-row">
+
+                <span>Profile Updated at</span>
+
+                <strong>
+                    <?php
+                    echo !empty($updated_at)
+                        ? date("d M Y", strtotime($updated_at))
+                        : "-";
+                    ?>
+                </strong>
+
+            </div>
+
         </div>
 
     </div>
@@ -694,7 +711,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_profile"])) {
                     <?php if ($photo_url !== ""): ?>
 
                         <img
-                            src="<?php echo htmlspecialchars($photo_url); ?>"
+                            src="<?php echo htmlspecialchars($photo_url); ?>?v=<?php echo time(); ?>"
                             class="modal-photo"
                             id="modalProfilePhoto"
                             alt="Profile Photo"

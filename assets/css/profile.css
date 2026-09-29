@@ -481,3 +481,39 @@ input {
         text-align: left;
     }
 }
+
+.profile-photo-area {
+    position: relative;
+}
+
+.profile-photo,
+.modal-photo {
+    display: block !important;
+    width: 120px !important;
+    height: 120px !important;
+    min-width: 120px !important;
+    min-height: 120px !important;
+    max-width: 120px !important;
+    max-height: 120px !important;
+    object-fit: cover;
+    border-radius: 50% !important;
+    aspect-ratio: 1 / 1;
+}
+
+.profile-photo {
+    max-width: 120px;
+    max-height: 120px;
+}
+
+.modal-photo {
+    width: 110px !important;
+    height: 110px !important;
+    min-width: 110px !important;
+    min-height: 110px !important;
+    max-width: 110px !important;
+    max-height: 110px !important;
+}
+
+.modal-photo-wrapper {
+    overflow: hidden;
+}

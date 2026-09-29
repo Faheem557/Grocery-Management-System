@@ -1,10 +1,75 @@
 <?php
-   session_start();
-   
-   $name = $_SESSION["user_name"];
-    if(!$name){
-        header("Location: ../login.php");
-    }
+
+session_start();
+
+require_once "../config/database.php";
+
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: 0");
+/*
+|--------------------------------------------------------------------------
+| Check Login
+|--------------------------------------------------------------------------
+*/
+if (!isset($_SESSION["user_id"], $_SESSION["shop_id"])) {
+    header("Location: ../index.php");
+    exit;
+}
+
+$user_id = (int) $_SESSION["user_id"];
+$shop_id = (int) $_SESSION["shop_id"];
+/*
+|--------------------------------------------------------------------------
+| Get Latest User Data From Database
+|--------------------------------------------------------------------------
+*/
+$sql = "SELECT id, name, username, role, status, profile_photo FROM users WHERE id = ? AND shop_id = ? LIMIT 1";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+if (!$stmt) {
+    die("Database query failed.");
+}
+
+mysqli_stmt_bind_param($stmt, "ii", $user_id, $shop_id);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+$user = mysqli_fetch_assoc($result);
+/*
+|--------------------------------------------------------------------------
+| User Not Found
+|--------------------------------------------------------------------------
+*/
+if (!$user) {
+
+    session_destroy();
+    header("Location: ../index.php");
+    exit;
+}
+/*
+|--------------------------------------------------------------------------
+| Latest User Values
+|--------------------------------------------------------------------------
+*/
+$name = $user["name"] ?? "User";
+
+$role = $user["role"] ?? "seller";
+
+$profile_photo = $user["profile_photo"] ?? "";
+/*
+|--------------------------------------------------------------------------
+| Safety Check
+|--------------------------------------------------------------------------
+*/
+if ($name === "") {
+    header("Location: ../index.php", true, 303);
+    exit;
+}
 
 ?>
 
