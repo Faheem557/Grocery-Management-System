@@ -607,7 +607,7 @@ if ($name === "") {
                     </a>
 
 
-                    <a href="customers.php" class="quick-action">
+                    <a href="add-customer.php" class="quick-action">
 
                         <span>♙</span>
 
