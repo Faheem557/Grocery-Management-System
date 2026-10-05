@@ -67,7 +67,7 @@ function getProfilePhotoUrl($profile_photo)
         return "";
     }
 
-    return "/grocery-management/" . ltrim($profile_photo, "/");
+    return "/grocery-management-system/" . ltrim($profile_photo, "/");
 }
 
 
