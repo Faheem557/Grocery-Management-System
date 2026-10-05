@@ -2,7 +2,7 @@
 
 $host = "localhost";
 $user = "root";
-$password = "Admin";
+$password = "";
 $database = "grocery_management";
 
 $conn = mysqli_connect($host, $user, $password, $database);
