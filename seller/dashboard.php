@@ -1,5 +1,4 @@
 <?php
-<<<<<<< HEAD
 
 session_start();
 
@@ -71,17 +70,6 @@ if ($name === "") {
     header("Location: ../index.php", true, 303);
     exit;
 }
-=======
-   session_start();
-   
-   $name = $_SESSION["user_name"];
-   $role = $_SESSION["role"];
-   $photo_url = $_SESSION["photo_url"];
-//    $profile_photo = $_SESSION["profile_photo"];
-    if(!$name){
-        header("Location: ../login.php");
-    }
->>>>>>> Zuhran
 
 ?>
 
