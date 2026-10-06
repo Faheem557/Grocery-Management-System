@@ -359,16 +359,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_profile"])) {
                 $email = $user["email"];
                 $role = $user["role"];
                 $status = $user["status"];
-                $profile_photo = $user["profile_photo"];
+                $_SESSION["profile_photo"] = $user["profile_photo"];
+                $profile_photo = $_SESSION["profile_photo"];
                 $created_at = $user["created_at"];
                 $updated_at = $user["updated_at"];
 
                 $initials = getUserInitials($name);
+<<<<<<< HEAD
                 $photo_url = !empty($profile_photo) ? ltrim($profile_photo, "/") : "";
+=======
+                $_SESSION["photo_url"] = getProfilePhotoUrl($profile_photo);
+                $photo_url = $_SESSION["photo_url"];
+>>>>>>> Zuhran
 
                 $success_message = "Profile updated successfully.";
 
-            } else {
+                echo "$photo_url";
+                } else {
 
                 /*
                 | If database update failed, remove newly uploaded image

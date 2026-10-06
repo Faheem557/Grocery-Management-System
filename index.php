@@ -66,6 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         // Check password
                         if (password_verify($password, $user["password"])) {
 
+<<<<<<< HEAD
                             // Store user information in session
                             $_SESSION["user_id"] = $user["id"];
                             $_SESSION["shop_id"] = $user["shop_id"];
@@ -80,6 +81,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             exit;
 
                         } else {
+=======
+                    $_SESSION["user_id"] = $user["id"];
+                    $_SESSION["shop_id"] = $user["shop_id"];
+                    $_SESSION["user_name"] = $user["name"];
+                    $_SESSION["role"] = $user["role"];
+                    $_SESSION["profile_photo"] = $user["profile_photo"];
+                    $profile_photo = $_SESSION["profile_photo"];
+                    $_SESSION["photo_url"] = $user["getProfilePhotoUrl($profile_photo)"];
+                    
+                   header("Location: success_login.php");
+                    exit;
+                }else{
+>>>>>>> Zuhran
 
                             $form_error = "Invalid username or password.";
                         }
