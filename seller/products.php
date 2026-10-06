@@ -1,21 +1,11 @@
 <?php
 session_start();
 
-<<<<<<< HEAD
-require_once "../config/database.php";
-
-/* Prevent old cached page */
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");
-header("Expires: 0");
-=======
 /*
 |--------------------------------------------------------------------------
 | LOGIN CHECK
 |--------------------------------------------------------------------------
 */
->>>>>>> Zuhran
 
 /* Check login */
 if (!isset($_SESSION["user_id"], $_SESSION["shop_id"])) {
@@ -23,45 +13,6 @@ if (!isset($_SESSION["user_id"], $_SESSION["shop_id"])) {
     exit;
 }
 
-<<<<<<< HEAD
-$user_id = (int) $_SESSION["user_id"];
-$shop_id = (int) $_SESSION["shop_id"];
-
-/* Get latest user data from database */
-$sql = "SELECT id, name, username, role, status, profile_photo
-        FROM users
-        WHERE id = ?
-        AND shop_id = ?
-        LIMIT 1";
-
-$stmt = mysqli_prepare($conn, $sql);
-
-if (!$stmt) {
-    die("Database query failed.");
-}
-
-mysqli_stmt_bind_param($stmt, "ii", $user_id, $shop_id);
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-$user = mysqli_fetch_assoc($result);
-
-if (!$user) {
-    session_destroy();
-    header("Location: ../index.php");
-    exit;
-}
-
-$name = $user["name"] ?? "User";
-$role = $user["role"] ?? "seller";
-$profile_photo = $user["profile_photo"] ?? "";
-
-if ($name === "") {
-    header("Location: ../index.php", true, 303);
-    exit;
-}
-?>
-=======
 
 /*
 |--------------------------------------------------------------------------
@@ -1321,7 +1272,6 @@ if ($result) {
 ?>
 
 
->>>>>>> Zuhran
 <!DOCTYPE html>
 
 <html lang="en">
@@ -1338,25 +1288,16 @@ if ($result) {
     </title>
 
 
-<<<<<<< HEAD
-    <!-- Bootstrap CSS -->
-=======
->>>>>>> Zuhran
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
 
-<<<<<<< HEAD
-    <!-- Your Products CSS -->
-    <link rel="stylesheet" href="../assets/css/products.css">
-=======
 
     <link
         rel="stylesheet"
         href="../assets/css/products.css"
     >
->>>>>>> Zuhran
 
     <style>
         /* PAGE LOADER */
@@ -1423,23 +1364,16 @@ if ($result) {
     <p>Loading Products...</p>
 </div>
 
-<<<<<<< HEAD
-<!-- SIDEBAR -->
-=======
 <!-- =====================================================
      SIDEBAR
 ===================================================== -->
 
->>>>>>> Zuhran
 <aside class="sidebar">
 
 
     <div class="brand">
-<<<<<<< HEAD
-=======
 
 
->>>>>>> Zuhran
         <img
             src="../assets/IMAGES/mainLogo.png"
             alt="Grocery Management System"
@@ -1458,11 +1392,8 @@ if ($result) {
             </span>
 
         </div>
-<<<<<<< HEAD
-=======
 
 
->>>>>>> Zuhran
     </div>
 
     <nav class="sidebar-nav">
@@ -1528,9 +1459,6 @@ if ($result) {
 
         </a>
 
-<<<<<<< HEAD
-        <p class="nav-title">SALES</p>
-=======
 
         <p class="nav-title">
             SALES
@@ -1545,7 +1473,6 @@ if ($result) {
             <span class="nav-icon">
                 ＋
             </span>
->>>>>>> Zuhran
 
             New Sale
 
@@ -1579,9 +1506,6 @@ if ($result) {
 
         </a>
 
-<<<<<<< HEAD
-        <p class="nav-title">CUSTOMERS</p>
-=======
 
         <p class="nav-title">
             CUSTOMERS
@@ -1596,7 +1520,6 @@ if ($result) {
             <span class="nav-icon">
                 ♙
             </span>
->>>>>>> Zuhran
 
             Customers
 
@@ -1630,9 +1553,6 @@ if ($result) {
 
         </a>
 
-<<<<<<< HEAD
-        <p class="nav-title">PURCHASE</p>
-=======
 
         <p class="nav-title">
             PURCHASE
@@ -1647,7 +1567,6 @@ if ($result) {
             <span class="nav-icon">
                 ▣
             </span>
->>>>>>> Zuhran
 
             Suppliers
 
@@ -1667,9 +1586,6 @@ if ($result) {
 
         </a>
 
-<<<<<<< HEAD
-        <p class="nav-title">BUSINESS</p>
-=======
 
         <p class="nav-title">
             BUSINESS
@@ -1684,7 +1600,6 @@ if ($result) {
             <span class="nav-icon">
                 ↗
             </span>
->>>>>>> Zuhran
 
             Profit
 
@@ -1774,26 +1689,18 @@ if ($result) {
 
         <div class="topbar-left">
 
-<<<<<<< HEAD
-            <button class="menu-button" type="button">
-=======
 
             <button
                 class="menu-button"
                 type="button"
             >
 
->>>>>>> Zuhran
                 ☰
 
             </button>
 
 
             <div>
-<<<<<<< HEAD
-                <h1>Products</h1>
-                <p>Manage your grocery products</p>
-=======
 
                 <h1>
                     Products
@@ -1804,7 +1711,6 @@ if ($result) {
                     Manage your grocery products
                 </p>
 
->>>>>>> Zuhran
             </div>
 
 
@@ -1812,16 +1718,12 @@ if ($result) {
 
         <div class="topbar-right">
 
-<<<<<<< HEAD
-            <button class="notification-button" type="button">
-=======
 
             <button
                 class="notification-button"
                 type="button"
             >
 
->>>>>>> Zuhran
                 🔔
 
                 <span
@@ -1837,21 +1739,6 @@ if ($result) {
 
                     <div class="profile-avatar">
 
-<<<<<<< HEAD
-                        <?php if (!empty($profile_photo)): ?>
-
-                            <img
-                                src="../<?php echo htmlspecialchars($profile_photo); ?>"
-                                alt="Profile Photo"
-                                class="dashboard-profile-photo"
-                            >
-
-                        <?php else: ?>
-
-                            <?php echo strtoupper(substr($name, 0, 2)); ?>
-
-                        <?php endif; ?>
-=======
                         <?= e(
                             strtoupper(
                                 substr(
@@ -1861,7 +1748,6 @@ if ($result) {
                                 )
                             )
                         ) ?>
->>>>>>> Zuhran
 
                     </div>
 
@@ -1870,28 +1756,20 @@ if ($result) {
                 <div class="profile-info">
 
                     <strong>
-<<<<<<< HEAD
-                        <?php echo htmlspecialchars($name); ?>
-=======
 
                         <?= e(
                             $_SESSION["user_name"] ?? "User"
                         ) ?>
 
->>>>>>> Zuhran
                     </strong>
 
 
                     <span>
-<<<<<<< HEAD
-                        <?php echo htmlspecialchars($role); ?>
-=======
 
                         <?= e(
                             $_SESSION["role"] ?? "seller"
                         ) ?>
 
->>>>>>> Zuhran
                     </span>
 
                 </div>
@@ -1905,11 +1783,6 @@ if ($result) {
 
     </header>
 
-<<<<<<< HEAD
-    <!-- PAGE CONTENT -->
-    <div class="page-content">
-
-=======
 
     <!-- =================================================
          PAGE CONTENT
@@ -1943,15 +1816,10 @@ if ($result) {
 
         <!-- PAGE HEADER -->
 
->>>>>>> Zuhran
         <div class="page-header">
 
 
             <div>
-<<<<<<< HEAD
-                <h2>Product Management</h2>
-                <p>Add, update and manage products in your store.</p>
-=======
 
                 <h2>
                     Product Management
@@ -1962,7 +1830,6 @@ if ($result) {
                     Add, update and manage products in your store.
                 </p>
 
->>>>>>> Zuhran
             </div>
 
             <button
@@ -1979,24 +1846,14 @@ if ($result) {
 
         </div>
 
-<<<<<<< HEAD
-        <!-- SUMMARY CARDS -->
-=======
 
         <!-- =================================================
              SUMMARY CARDS
         ================================================= -->
 
->>>>>>> Zuhran
         <div class="summary-grid">
 
             <div class="summary-card">
-<<<<<<< HEAD
-                <div class="summary-icon total">▣</div>
-                <div>
-                    <span>Total Products</span>
-                    <h3>0</h3>
-=======
 
                 <div class="summary-icon total">
                     ▣
@@ -2016,17 +1873,10 @@ if ($result) {
                         ) ?>
                     </h3>
 
->>>>>>> Zuhran
                 </div>
             </div>
 
             <div class="summary-card">
-<<<<<<< HEAD
-                <div class="summary-icon active">✓</div>
-                <div>
-                    <span>Active Products</span>
-                    <h3>0</h3>
-=======
 
                 <div class="summary-icon active">
                     ✓
@@ -2046,17 +1896,10 @@ if ($result) {
                         ) ?>
                     </h3>
 
->>>>>>> Zuhran
                 </div>
             </div>
 
             <div class="summary-card">
-<<<<<<< HEAD
-                <div class="summary-icon low">!</div>
-                <div>
-                    <span>Low Stock</span>
-                    <h3>0</h3>
-=======
 
                 <div class="summary-icon low">
                     !
@@ -2076,17 +1919,10 @@ if ($result) {
                         ) ?>
                     </h3>
 
->>>>>>> Zuhran
                 </div>
             </div>
 
             <div class="summary-card">
-<<<<<<< HEAD
-                <div class="summary-icon out">×</div>
-                <div>
-                    <span>Out of Stock</span>
-                    <h3>0</h3>
-=======
 
                 <div class="summary-icon out">
                     ×
@@ -2106,43 +1942,11 @@ if ($result) {
                         ) ?>
                     </h3>
 
->>>>>>> Zuhran
                 </div>
             </div>
 
         </div>
 
-<<<<<<< HEAD
-        <!-- PRODUCT PANEL -->
-        <div class="product-panel">
-
-            <div class="filter-area">
-
-                <div class="search-box">
-                    <span>⌕</span>
-                    <input
-                        type="text"
-                        placeholder="Search product..."
-                    >
-                </div>
-
-                <select class="filter-select">
-                    <option value="">All Categories</option>
-                </select>
-
-                <select class="filter-select">
-                    <option value="">All Stock</option>
-                    <option value="in-stock">In Stock</option>
-                    <option value="low-stock">Low Stock</option>
-                    <option value="out-stock">Out of Stock</option>
-                </select>
-
-                <button class="filter-btn" type="button">
-                    Filter
-                </button>
-
-            </div>
-=======
 
         <!-- =================================================
              PRODUCT PANEL
@@ -2297,7 +2101,6 @@ if ($result) {
             <!-- =================================================
                  TABLE
             ================================================= -->
->>>>>>> Zuhran
 
             <div class="table-responsive">
 
@@ -2309,19 +2112,6 @@ if ($result) {
 
                     <thead>
                         <tr>
-<<<<<<< HEAD
-                            <th>#</th>
-                            <th>Product</th>
-                            <th>Category</th>
-                            <th>SKU</th>
-                            <th>Barcode</th>
-                            <th>Unit</th>
-                            <th>Purchase Price</th>
-                            <th>Sale Price</th>
-                            <th>Stock</th>
-                            <th>Status</th>
-                            <th class="text-end">Action</th>
-=======
 
                             <th>
                                 #
@@ -2367,7 +2157,6 @@ if ($result) {
                                 Action
                             </th>
 
->>>>>>> Zuhran
                         </tr>
                     </thead>
 
@@ -2379,10 +2168,6 @@ if ($result) {
                     ): ?>
 
                         <tr>
-<<<<<<< HEAD
-                            <td colspan="11" class="text-center">
-                                No products added yet.
-=======
 
                             <td
                                 colspan="11"
@@ -2400,7 +2185,6 @@ if ($result) {
 
                                 </p>
 
->>>>>>> Zuhran
                             </td>
                         </tr>
 
@@ -2681,31 +2465,6 @@ if ($result) {
 
             </div>
 
-<<<<<<< HEAD
-            <div class="table-footer">
-
-                <p>Showing 0 products</p>
-
-                <nav>
-
-                    <ul class="pagination pagination-sm mb-0">
-
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#">Previous</a>
-                        </li>
-
-                        <li class="page-item active">
-                            <a class="page-link" href="#">1</a>
-                        </li>
-
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#">Next</a>
-                        </li>
-
-                    </ul>
-
-                </nav>
-=======
 
             <!-- TABLE FOOTER -->
 
@@ -2718,7 +2477,6 @@ if ($result) {
                     product(s)
 
                 </p>
->>>>>>> Zuhran
 
             </div>
 
@@ -2729,15 +2487,11 @@ if ($result) {
 
 </main>
 
-<<<<<<< HEAD
-<!-- ADD PRODUCT MODAL -->
-=======
 
 <!-- =====================================================
      ADD PRODUCT MODAL
 ===================================================== -->
 
->>>>>>> Zuhran
 <div
     class="modal fade"
     id="addProductModal"
@@ -2755,10 +2509,6 @@ if ($result) {
 
 
                 <div>
-<<<<<<< HEAD
-                    <h5 class="modal-title">Add New Product</h5>
-                    <small>Enter product information below</small>
-=======
 
                     <h5 class="modal-title">
                         Add New Product
@@ -2769,7 +2519,6 @@ if ($result) {
                         Enter product information below
                     </small>
 
->>>>>>> Zuhran
                 </div>
 
                 <button
@@ -2781,11 +2530,6 @@ if ($result) {
 
             </div>
 
-<<<<<<< HEAD
-            <!-- IMPORTANT: ONLY ONE FORM -->
-            <form action="products.php" method="POST">
-
-=======
 
             <form
                 method="POST"
@@ -2793,7 +2537,6 @@ if ($result) {
             >
 
 
->>>>>>> Zuhran
                 <div class="modal-body">
 
                     <div class="row g-3">
@@ -2804,9 +2547,6 @@ if ($result) {
                         <!-- PRODUCT NAME -->
 
                         <div class="col-md-8">
-<<<<<<< HEAD
-                            <label class="form-label">Product Name</label>
-=======
 
                             <label class="form-label">
                                 Product Name
@@ -2853,38 +2593,10 @@ if ($result) {
                             <label class="form-label">
                                 Barcode
                             </label>
->>>>>>> Zuhran
 
 
                             <input
                                 type="text"
-<<<<<<< HEAD
-                                name="product_name"
-                                class="form-control"
-                                placeholder="Enter product name"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">SKU</label>
-
-                            <input
-                                type="text"
-                                name="sku"
-                                class="form-control"
-                                placeholder="e.g. PRD-001"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Barcode</label>
-
-                            <input
-                                type="text"
-=======
->>>>>>> Zuhran
                                 name="barcode"
                                 class="form-control"
                                 placeholder="Enter barcode"
@@ -2895,19 +2607,6 @@ if ($result) {
                         <div class="col-md-6">
                             <label class="form-label">Category</label>
 
-<<<<<<< HEAD
-                            <select
-                                name="category"
-                                class="form-select"
-                                required
-                            >
-                                <option value="">Select category</option>
-                                <option>Grocery</option>
-                                <option>Rice & Grains</option>
-                                <option>Dairy</option>
-                                <option>Beverages</option>
-                                <option>Cleaning</option>
-=======
                         <!-- CATEGORY -->
 
                         <div class="col-md-6">
@@ -2945,32 +2644,9 @@ if ($result) {
                                 <?php endforeach; ?>
 
 
->>>>>>> Zuhran
                             </select>
                         </div>
 
-<<<<<<< HEAD
-                        <div class="col-md-6">
-                            <label class="form-label">Unit</label>
-
-                            <select
-                                name="unit"
-                                class="form-select"
-                                required
-                            >
-                                <option value="">Select unit</option>
-                                <option>Piece</option>
-                                <option>Kg</option>
-                                <option>Gram</option>
-                                <option>Liter</option>
-                                <option>Pack</option>
-                                <option>Dozen</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Purchase Price</label>
-=======
                         </div>
 
 
@@ -3037,7 +2713,6 @@ if ($result) {
                                 Purchase Price
                             </label>
 
->>>>>>> Zuhran
 
                             <input
                                 type="number"
@@ -3046,13 +2721,6 @@ if ($result) {
                                 step="0.01"
                                 min="0"
                                 placeholder="0.00"
-<<<<<<< HEAD
-                            >
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Sale Price</label>
-=======
                                 required
                             >
 
@@ -3067,7 +2735,6 @@ if ($result) {
                                 Sale Price
                             </label>
 
->>>>>>> Zuhran
 
                             <input
                                 type="number"
@@ -3076,13 +2743,6 @@ if ($result) {
                                 step="0.01"
                                 min="0"
                                 placeholder="0.00"
-<<<<<<< HEAD
-                            >
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Opening Stock</label>
-=======
                                 required
                             >
 
@@ -3096,31 +2756,10 @@ if ($result) {
                             <label class="form-label">
                                 Opening Stock
                             </label>
->>>>>>> Zuhran
 
 
                             <input
                                 type="number"
-<<<<<<< HEAD
-                                name="opening_stock"
-                                class="form-control"
-                                step="0.01"
-                                min="0"
-                                placeholder="0"
-                            >
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label">Description</label>
-
-                            <textarea
-                                name="description"
-                                class="form-control"
-                                rows="3"
-                                placeholder="Optional product description"
-                            ></textarea>
-                        </div>
-=======
                                 name="stock_quantity"
                                 class="form-control"
                                 step="0.01"
@@ -3184,24 +2823,10 @@ if ($result) {
 
                         </div>
 
->>>>>>> Zuhran
 
                     </div>
 
                 </div>
-<<<<<<< HEAD
-
-                <div class="modal-footer">
-
-                    <button
-                        type="button"
-                        class="btn btn-light"
-                        data-bs-dismiss="modal"
-                    >
-                        Cancel
-                    </button>
-=======
->>>>>>> Zuhran
 
                     <button
                         type="submit"
@@ -3211,9 +2836,6 @@ if ($result) {
                         Save Product
                     </button>
 
-<<<<<<< HEAD
-                </div>
-=======
                 <div class="modal-footer">
 
 
@@ -3243,7 +2865,6 @@ if ($result) {
 
 
             </form>
->>>>>>> Zuhran
 
             </form>
 
@@ -3253,9 +2874,6 @@ if ($result) {
 
 </div>
 
-<<<<<<< HEAD
-<!-- EDIT PRODUCT MODAL -->
-=======
 
 <!-- =====================================================
      EDIT PRODUCT MODALS
@@ -3266,7 +2884,6 @@ if ($result) {
 ): ?>
 
 
->>>>>>> Zuhran
 <div
     class="modal fade"
     id="editProductModal<?= (int) $product["id"] ?>"
@@ -3284,10 +2901,6 @@ if ($result) {
 
 
                 <div>
-<<<<<<< HEAD
-                    <h5 class="modal-title">Edit Product</h5>
-                    <small>Update product information</small>
-=======
 
                     <h5 class="modal-title">
                         Edit Product
@@ -3298,7 +2911,6 @@ if ($result) {
                         Update product information
                     </small>
 
->>>>>>> Zuhran
                 </div>
 
                 <button
@@ -3310,9 +2922,6 @@ if ($result) {
 
             </div>
 
-<<<<<<< HEAD
-            <div class="modal-body">
-=======
 
             <form
                 method="POST"
@@ -3328,17 +2937,13 @@ if ($result) {
                         name="id"
                         value="<?= (int) $product["id"] ?>"
                     >
->>>>>>> Zuhran
 
 
                     <div class="row g-3">
 
-<<<<<<< HEAD
-=======
 
                         <!-- PRODUCT NAME -->
 
->>>>>>> Zuhran
                         <div class="col-md-8">
                             <label class="form-label">Product Name</label>
 
@@ -3355,12 +2960,9 @@ if ($result) {
                             >
                         </div>
 
-<<<<<<< HEAD
-=======
 
                         <!-- SKU -->
 
->>>>>>> Zuhran
                         <div class="col-md-4">
                             <label class="form-label">SKU</label>
 
@@ -3377,12 +2979,9 @@ if ($result) {
                             >
                         </div>
 
-<<<<<<< HEAD
-=======
 
                         <!-- BARCODE -->
 
->>>>>>> Zuhran
                         <div class="col-md-6">
                             <label class="form-label">Barcode</label>
 
@@ -3398,19 +2997,12 @@ if ($result) {
                             >
                         </div>
 
-<<<<<<< HEAD
-=======
 
                         <!-- CATEGORY -->
 
->>>>>>> Zuhran
                         <div class="col-md-6">
                             <label class="form-label">Category</label>
 
-<<<<<<< HEAD
-                            <select class="form-select">
-                                <option selected>Select category</option>
-=======
 
                             <select
                                 name="category_id"
@@ -3445,28 +3037,15 @@ if ($result) {
                                 <?php endforeach; ?>
 
 
->>>>>>> Zuhran
                             </select>
                         </div>
 
-<<<<<<< HEAD
-=======
 
                         <!-- UNIT -->
 
->>>>>>> Zuhran
                         <div class="col-md-6">
                             <label class="form-label">Unit</label>
 
-<<<<<<< HEAD
-                            <select class="form-select">
-                                <option>Piece</option>
-                                <option>Kg</option>
-                                <option>Gram</option>
-                                <option>Liter</option>
-                                <option>Pack</option>
-                                <option>Dozen</option>
-=======
 
                             <select
                                 name="unit"
@@ -3506,14 +3085,9 @@ if ($result) {
                                 <?php endforeach; ?>
 
 
->>>>>>> Zuhran
                             </select>
                         </div>
 
-<<<<<<< HEAD
-                        <div class="col-md-6">
-                            <label class="form-label">Purchase Price</label>
-=======
 
                         <!-- PURCHASE PRICE -->
 
@@ -3522,7 +3096,6 @@ if ($result) {
                             <label class="form-label">
                                 Purchase Price
                             </label>
->>>>>>> Zuhran
 
 
                             <input
@@ -3538,10 +3111,6 @@ if ($result) {
                             >
                         </div>
 
-<<<<<<< HEAD
-                        <div class="col-md-6">
-                            <label class="form-label">Sale Price</label>
-=======
 
                         <!-- SALE PRICE -->
 
@@ -3550,7 +3119,6 @@ if ($result) {
                             <label class="form-label">
                                 Sale Price
                             </label>
->>>>>>> Zuhran
 
 
                             <input
@@ -3566,10 +3134,6 @@ if ($result) {
                             >
                         </div>
 
-<<<<<<< HEAD
-                        <div class="col-md-6">
-                            <label class="form-label">Stock Quantity</label>
-=======
 
                         <!-- STOCK -->
 
@@ -3578,7 +3142,6 @@ if ($result) {
                             <label class="form-label">
                                 Stock Quantity
                             </label>
->>>>>>> Zuhran
 
 
                             <input
@@ -3594,10 +3157,6 @@ if ($result) {
                             >
                         </div>
 
-<<<<<<< HEAD
-                        <div class="col-md-6">
-                            <label class="form-label">Low Stock Limit</label>
-=======
 
                         <!-- LOW STOCK LIMIT -->
 
@@ -3606,7 +3165,6 @@ if ($result) {
                             <label class="form-label">
                                 Low Stock Limit
                             </label>
->>>>>>> Zuhran
 
 
                             <input
@@ -3622,20 +3180,12 @@ if ($result) {
                             >
                         </div>
 
-<<<<<<< HEAD
-=======
 
                         <!-- STATUS -->
 
->>>>>>> Zuhran
                         <div class="col-md-6">
                             <label class="form-label">Status</label>
 
-<<<<<<< HEAD
-                            <select class="form-select">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-=======
 
                             <select
                                 name="status"
@@ -3665,7 +3215,6 @@ if ($result) {
 
                                 </option>
 
->>>>>>> Zuhran
                             </select>
                         </div>
 
@@ -3673,24 +3222,6 @@ if ($result) {
 
                 </div>
 
-<<<<<<< HEAD
-            <div class="modal-footer">
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
-
-                <button
-                    type="button"
-                    class="btn add-product-btn"
-                >
-                    Update Product
-                </button>
-=======
 
                 <div class="modal-footer">
 
@@ -3700,7 +3231,6 @@ if ($result) {
                         class="btn btn-light"
                         data-bs-dismiss="modal"
                     >
->>>>>>> Zuhran
 
                         Cancel
 
@@ -3729,28 +3259,6 @@ if ($result) {
 
 </div>
 
-<<<<<<< HEAD
-<!-- Bootstrap JS -->
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-></script>
-
-<!-- Loader control -->
-<script>
-    window.addEventListener("load", function () {
-        const loader = document.getElementById("page-loader");
-
-        if (loader) {
-            loader.style.opacity = "0";
-            loader.style.transition = "opacity 0.25s ease";
-
-            setTimeout(function () {
-                loader.style.display = "none";
-            }, 250);
-        }
-    });
-</script>
-=======
 
 <?php endforeach; ?>
 
@@ -3762,11 +3270,6 @@ if ($result) {
 <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
 ></script>
->>>>>>> Zuhran
 
 </body>
-<<<<<<< HEAD
-=======
-
->>>>>>> Zuhran
 </html>
