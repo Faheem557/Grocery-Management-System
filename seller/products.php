@@ -1359,10 +1359,10 @@ if ($result) {
 <body>
 
 <!-- PAGE LOADER -->
-<div id="page-loader">
+<!-- <div id="page-loader">
     <div class="loader-spinner"></div>
     <p>Loading Products...</p>
-</div>
+</div> -->
 
 <!-- =====================================================
      SIDEBAR
@@ -1672,15 +1672,11 @@ if ($result) {
 
 </aside>
 
-<<<<<<< HEAD
-<!-- MAIN CONTENT -->
-=======
 
 <!-- =====================================================
      MAIN CONTENT
 ===================================================== -->
 
->>>>>>> Zuhran
 <main class="main-content">
 
     <!-- TOPBAR -->
