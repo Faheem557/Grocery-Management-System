@@ -2,176 +2,1625 @@
 
 session_start();
 
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: 0");
+/*
+|--------------------------------------------------------------------------
+| LOGIN CHECK
+|--------------------------------------------------------------------------
+*/
 
 if (!isset($_SESSION["user_id"])) {
     header("Location: ../index.php");
     exit;
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| DATABASE
+|--------------------------------------------------------------------------
+*/
+
+require_once "../config/database.php";
+
+
+/*
+|--------------------------------------------------------------------------
+| HELPER FUNCTIONS
+|--------------------------------------------------------------------------
+*/
+
+function redirectMessage($message, $type = "success")
+{
+    header(
+        "Location: products.php?" .
+        http_build_query([
+            "message" => $message,
+            "type" => $type
+        ])
+    );
+
+    exit;
+}
+
+
+function e($value)
+{
+    return htmlspecialchars(
+        (string) $value,
+        ENT_QUOTES,
+        "UTF-8"
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SHOP ID
+|--------------------------------------------------------------------------
+|
+| Your products table requires shop_id.
+| This file checks several common session names so it can work with
+| your existing login/session system.
+|
+*/
+
+$shopId = (int) (
+    $_SESSION["shop_id"]
+    ?? $_SESSION["user_shop_id"]
+    ?? $_SESSION["shop"]
+    ?? 0
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| If shop_id is not directly stored in session, try to get it
+| from the users table using the logged-in user_id.
+|--------------------------------------------------------------------------
+*/
+
+if ($shopId <= 0) {
+
+    $userId = (int) ($_SESSION["user_id"] ?? 0);
+
+    if ($userId > 0) {
+
+        $userStmt = mysqli_prepare(
+            $conn,
+            "SELECT shop_id
+             FROM users
+             WHERE id = ?
+             LIMIT 1"
+        );
+
+        if ($userStmt) {
+
+            mysqli_stmt_bind_param(
+                $userStmt,
+                "i",
+                $userId
+            );
+
+            mysqli_stmt_execute($userStmt);
+
+            $userResult = mysqli_stmt_get_result(
+                $userStmt
+            );
+
+            if ($userResult) {
+
+                $userRow = mysqli_fetch_assoc(
+                    $userResult
+                );
+
+                if ($userRow) {
+                    $shopId = (int) (
+                        $userRow["shop_id"] ?? 0
+                    );
+                }
+            }
+
+            mysqli_stmt_close($userStmt);
+        }
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SAFETY CHECK
+|--------------------------------------------------------------------------
+*/
+
+if ($shopId <= 0) {
+
+    die(
+        "Unable to determine your shop. Please make sure shop_id is stored in your login session or users table."
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| ADD PRODUCT
+|--------------------------------------------------------------------------
+*/
+
+if (
+    $_SERVER["REQUEST_METHOD"] === "POST" &&
+    isset($_POST["add_product"])
+) {
+
+    $name = trim(
+        $_POST["name"] ?? ""
+    );
+
+    $sku = trim(
+        $_POST["sku"] ?? ""
+    );
+
+    $barcode = trim(
+        $_POST["barcode"] ?? ""
+    );
+
+    $category_id = (int) (
+        $_POST["category_id"] ?? 0
+    );
+
+    $unit = trim(
+        $_POST["unit"] ?? ""
+    );
+
+    $purchase_price =
+        $_POST["purchase_price"] ?? "";
+
+    $sale_price =
+        $_POST["sale_price"] ?? "";
+
+    $stock_quantity =
+        $_POST["stock_quantity"] ?? "";
+
+    $low_stock_limit =
+        $_POST["low_stock_limit"] ?? 5;
+
+    $status =
+        $_POST["status"] ?? "active";
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $name === "" ||
+        $sku === "" ||
+        $category_id <= 0 ||
+        $unit === "" ||
+        $purchase_price === "" ||
+        $sale_price === "" ||
+        $stock_quantity === ""
+    ) {
+
+        redirectMessage(
+            "Please fill all required fields.",
+            "danger"
+        );
+    }
+
+
+    if (
+        !is_numeric($purchase_price) ||
+        !is_numeric($sale_price) ||
+        !is_numeric($stock_quantity) ||
+        !is_numeric($low_stock_limit)
+    ) {
+
+        redirectMessage(
+            "Please enter valid price and stock values.",
+            "danger"
+        );
+    }
+
+
+    $purchase_price =
+        (float) $purchase_price;
+
+    $sale_price =
+        (float) $sale_price;
+
+    $stock_quantity =
+        (float) $stock_quantity;
+
+    $low_stock_limit =
+        (float) $low_stock_limit;
+
+
+    if (
+        $purchase_price < 0 ||
+        $sale_price < 0 ||
+        $stock_quantity < 0 ||
+        $low_stock_limit < 0
+    ) {
+
+        redirectMessage(
+            "Price and stock values cannot be negative.",
+            "danger"
+        );
+    }
+
+
+    if (
+        $status !== "active" &&
+        $status !== "inactive"
+    ) {
+
+        $status = "active";
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK SKU
+    |--------------------------------------------------------------------------
+    */
+
+    $checkSku = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM products
+         WHERE shop_id = ?
+         AND sku = ?
+         LIMIT 1"
+    );
+
+
+    if (!$checkSku) {
+
+        redirectMessage(
+            "Database error: " . mysqli_error($conn),
+            "danger"
+        );
+    }
+
+
+    mysqli_stmt_bind_param(
+        $checkSku,
+        "is",
+        $shopId,
+        $sku
+    );
+
+
+    mysqli_stmt_execute(
+        $checkSku
+    );
+
+    mysqli_stmt_store_result(
+        $checkSku
+    );
+
+
+    if (
+        mysqli_stmt_num_rows(
+            $checkSku
+        ) > 0
+    ) {
+
+        mysqli_stmt_close(
+            $checkSku
+        );
+
+        redirectMessage(
+            "SKU already exists. Please use a different SKU.",
+            "danger"
+        );
+    }
+
+
+    mysqli_stmt_close(
+        $checkSku
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSERT PRODUCT
+    |--------------------------------------------------------------------------
+    */
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "INSERT INTO products
+        (
+            shop_id,
+            category_id,
+            name,
+            sku,
+            barcode,
+            unit,
+            purchase_price,
+            sale_price,
+            stock_quantity,
+            low_stock_limit,
+            status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
+
+
+    if (!$stmt) {
+
+        redirectMessage(
+            "Database error: " . mysqli_error($conn),
+            "danger"
+        );
+    }
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "iissssdddss",
+        $shopId,
+        $category_id,
+        $name,
+        $sku,
+        $barcode,
+        $unit,
+        $purchase_price,
+        $sale_price,
+        $stock_quantity,
+        $low_stock_limit,
+        $status
+    );
+
+
+    if (
+        mysqli_stmt_execute($stmt)
+    ) {
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Product added successfully.",
+            "success"
+        );
+
+    } else {
+
+        $error =
+            mysqli_stmt_error($stmt);
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Error adding product: " . $error,
+            "danger"
+        );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE PRODUCT
+|--------------------------------------------------------------------------
+*/
+
+if (
+    $_SERVER["REQUEST_METHOD"] === "POST" &&
+    isset($_POST["update_product"])
+) {
+
+    $id = (int) (
+        $_POST["id"] ?? 0
+    );
+
+    $name = trim(
+        $_POST["name"] ?? ""
+    );
+
+    $sku = trim(
+        $_POST["sku"] ?? ""
+    );
+
+    $barcode = trim(
+        $_POST["barcode"] ?? ""
+    );
+
+    $category_id = (int) (
+        $_POST["category_id"] ?? 0
+    );
+
+    $unit = trim(
+        $_POST["unit"] ?? ""
+    );
+
+    $purchase_price =
+        $_POST["purchase_price"] ?? "";
+
+    $sale_price =
+        $_POST["sale_price"] ?? "";
+
+    $stock_quantity =
+        $_POST["stock_quantity"] ?? "";
+
+    $low_stock_limit =
+        $_POST["low_stock_limit"] ?? 5;
+
+    $status =
+        $_POST["status"] ?? "active";
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if ($id <= 0) {
+
+        redirectMessage(
+            "Invalid product.",
+            "danger"
+        );
+    }
+
+
+    if (
+        $name === "" ||
+        $sku === "" ||
+        $category_id <= 0 ||
+        $unit === "" ||
+        $purchase_price === "" ||
+        $sale_price === "" ||
+        $stock_quantity === ""
+    ) {
+
+        redirectMessage(
+            "Please fill all required fields.",
+            "danger"
+        );
+    }
+
+
+    if (
+        !is_numeric($purchase_price) ||
+        !is_numeric($sale_price) ||
+        !is_numeric($stock_quantity) ||
+        !is_numeric($low_stock_limit)
+    ) {
+
+        redirectMessage(
+            "Please enter valid price and stock values.",
+            "danger"
+        );
+    }
+
+
+    $purchase_price =
+        (float) $purchase_price;
+
+    $sale_price =
+        (float) $sale_price;
+
+    $stock_quantity =
+        (float) $stock_quantity;
+
+    $low_stock_limit =
+        (float) $low_stock_limit;
+
+
+    if (
+        $purchase_price < 0 ||
+        $sale_price < 0 ||
+        $stock_quantity < 0 ||
+        $low_stock_limit < 0
+    ) {
+
+        redirectMessage(
+            "Price and stock values cannot be negative.",
+            "danger"
+        );
+    }
+
+
+    if (
+        $status !== "active" &&
+        $status !== "inactive"
+    ) {
+
+        $status = "active";
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK SKU
+    |--------------------------------------------------------------------------
+    */
+
+    $checkSku = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM products
+         WHERE shop_id = ?
+         AND sku = ?
+         AND id != ?
+         LIMIT 1"
+    );
+
+
+    if (!$checkSku) {
+
+        redirectMessage(
+            "Database error: " . mysqli_error($conn),
+            "danger"
+        );
+    }
+
+
+    mysqli_stmt_bind_param(
+        $checkSku,
+        "isi",
+        $shopId,
+        $sku,
+        $id
+    );
+
+
+    mysqli_stmt_execute(
+        $checkSku
+    );
+
+    mysqli_stmt_store_result(
+        $checkSku
+    );
+
+
+    if (
+        mysqli_stmt_num_rows(
+            $checkSku
+        ) > 0
+    ) {
+
+        mysqli_stmt_close(
+            $checkSku
+        );
+
+        redirectMessage(
+            "SKU already belongs to another product.",
+            "danger"
+        );
+    }
+
+
+    mysqli_stmt_close(
+        $checkSku
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE PRODUCT
+    |--------------------------------------------------------------------------
+    */
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "UPDATE products
+         SET
+            category_id = ?,
+            name = ?,
+            sku = ?,
+            barcode = ?,
+            unit = ?,
+            purchase_price = ?,
+            sale_price = ?,
+            stock_quantity = ?,
+            low_stock_limit = ?,
+            status = ?
+         WHERE id = ?
+         AND shop_id = ?"
+    );
+
+
+    if (!$stmt) {
+
+        redirectMessage(
+            "Database error: " . mysqli_error($conn),
+            "danger"
+        );
+    }
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "issssddddsii",
+        $category_id,
+        $name,
+        $sku,
+        $barcode,
+        $unit,
+        $purchase_price,
+        $sale_price,
+        $stock_quantity,
+        $low_stock_limit,
+        $status,
+        $id,
+        $shopId
+    );
+
+
+    if (
+        mysqli_stmt_execute($stmt)
+    ) {
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Product updated successfully.",
+            "success"
+        );
+
+    } else {
+
+        $error =
+            mysqli_stmt_error($stmt);
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Error updating product: " . $error,
+            "danger"
+        );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| DELETE PRODUCT
+|--------------------------------------------------------------------------
+*/
+
+if (
+    $_SERVER["REQUEST_METHOD"] === "POST" &&
+    isset($_POST["delete_product"])
+) {
+
+    $id = (int) (
+        $_POST["id"] ?? 0
+    );
+
+
+    if ($id <= 0) {
+
+        redirectMessage(
+            "Invalid product.",
+            "danger"
+        );
+    }
+
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "DELETE FROM products
+         WHERE id = ?
+         AND shop_id = ?"
+    );
+
+
+    if (!$stmt) {
+
+        redirectMessage(
+            "Database error: " . mysqli_error($conn),
+            "danger"
+        );
+    }
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ii",
+        $id,
+        $shopId
+    );
+
+
+    if (
+        mysqli_stmt_execute($stmt)
+    ) {
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Product deleted successfully.",
+            "success"
+        );
+
+    } else {
+
+        $error =
+            mysqli_stmt_error($stmt);
+
+        mysqli_stmt_close($stmt);
+
+        redirectMessage(
+            "Error deleting product: " . $error,
+            "danger"
+        );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| MESSAGE
+|--------------------------------------------------------------------------
+*/
+
+$message =
+    $_GET["message"] ?? "";
+
+$messageType =
+    $_GET["type"] ?? "success";
+
+
+/*
+|--------------------------------------------------------------------------
+| GET CATEGORIES
+|--------------------------------------------------------------------------
+*/
+
+$categories = [];
+
+
+$categoryQuery = mysqli_prepare(
+    $conn,
+    "SELECT id, name
+     FROM categories
+     WHERE shop_id = ?
+     ORDER BY name ASC"
+);
+
+
+if ($categoryQuery) {
+
+    mysqli_stmt_bind_param(
+        $categoryQuery,
+        "i",
+        $shopId
+    );
+
+    mysqli_stmt_execute(
+        $categoryQuery
+    );
+
+    $categoryResult =
+        mysqli_stmt_get_result(
+            $categoryQuery
+        );
+
+    if ($categoryResult) {
+
+        while (
+            $row =
+                mysqli_fetch_assoc(
+                    $categoryResult
+                )
+        ) {
+
+            $categories[] = $row;
+        }
+    }
+
+    mysqli_stmt_close(
+        $categoryQuery
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SEARCH / FILTER
+|--------------------------------------------------------------------------
+*/
+
+$search =
+    trim($_GET["search"] ?? "");
+
+$categoryFilter =
+    trim($_GET["category"] ?? "");
+
+$stockFilter =
+    trim($_GET["stock"] ?? "");
+
+
+/*
+|--------------------------------------------------------------------------
+| PRODUCT QUERY
+|--------------------------------------------------------------------------
+*/
+
+$sql = "
+
+    SELECT
+        p.id,
+        p.shop_id,
+        p.category_id,
+        p.name,
+        p.sku,
+        p.barcode,
+        p.unit,
+        p.purchase_price,
+        p.sale_price,
+        p.stock_quantity,
+        p.low_stock_limit,
+        p.status,
+        p.created_at,
+
+        c.name AS category_name
+
+    FROM products p
+
+    LEFT JOIN categories c
+        ON c.id = p.category_id
+        AND c.shop_id = p.shop_id
+
+    WHERE p.shop_id = ?
+
+";
+
+
+$types = "i";
+
+$params = [
+    $shopId
+];
+
+
+/*
+|--------------------------------------------------------------------------
+| SEARCH
+|--------------------------------------------------------------------------
+*/
+
+if ($search !== "") {
+
+    $sql .= "
+
+        AND (
+            p.name LIKE ?
+            OR p.sku LIKE ?
+            OR p.barcode LIKE ?
+        )
+
+    ";
+
+
+    $searchValue =
+        "%" . $search . "%";
+
+
+    $types .= "sss";
+
+    $params[] =
+        $searchValue;
+
+    $params[] =
+        $searchValue;
+
+    $params[] =
+        $searchValue;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CATEGORY FILTER
+|--------------------------------------------------------------------------
+*/
+
+if ($categoryFilter !== "") {
+
+    $categoryId =
+        (int) $categoryFilter;
+
+
+    if ($categoryId > 0) {
+
+        $sql .= "
+            AND p.category_id = ?
+        ";
+
+        $types .= "i";
+
+        $params[] =
+            $categoryId;
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| STOCK FILTER
+|--------------------------------------------------------------------------
+*/
+
+if (
+    $stockFilter === "in_stock"
+) {
+
+    $sql .= "
+        AND p.stock_quantity > p.low_stock_limit
+    ";
+
+} elseif (
+    $stockFilter === "low_stock"
+) {
+
+    $sql .= "
+        AND p.stock_quantity > 0
+        AND p.stock_quantity <= p.low_stock_limit
+    ";
+
+} elseif (
+    $stockFilter === "out_of_stock"
+) {
+
+    $sql .= "
+        AND p.stock_quantity <= 0
+    ";
+}
+
+
+$sql .= "
+
+    ORDER BY p.id DESC
+
+";
+
+
+/*
+|--------------------------------------------------------------------------
+| PREPARE PRODUCT QUERY
+|--------------------------------------------------------------------------
+*/
+
+$stmt = mysqli_prepare(
+    $conn,
+    $sql
+);
+
+
+if (!$stmt) {
+
+    die(
+        "Product query error: " .
+        mysqli_error($conn)
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BIND PARAMETERS
+|--------------------------------------------------------------------------
+*/
+
+mysqli_stmt_bind_param(
+    $stmt,
+    $types,
+    ...$params
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| EXECUTE
+|--------------------------------------------------------------------------
+*/
+
+mysqli_stmt_execute(
+    $stmt
+);
+
+
+$result =
+    mysqli_stmt_get_result(
+        $stmt
+    );
+
+
+$products = [];
+
+
+if ($result) {
+
+    while (
+        $row =
+            mysqli_fetch_assoc($result)
+    ) {
+
+        $products[] =
+            $row;
+    }
+}
+
+
+mysqli_stmt_close(
+    $stmt
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| SUMMARY
+|--------------------------------------------------------------------------
+*/
+
+$totalProducts =
+    0;
+
+$activeProducts =
+    0;
+
+$lowStock =
+    0;
+
+$outOfStock =
+    0;
+
+
+/*
+|--------------------------------------------------------------------------
+| TOTAL PRODUCTS
+|--------------------------------------------------------------------------
+*/
+
+$result = mysqli_prepare(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM products
+     WHERE shop_id = ?"
+);
+
+
+if ($result) {
+
+    mysqli_stmt_bind_param(
+        $result,
+        "i",
+        $shopId
+    );
+
+    mysqli_stmt_execute(
+        $result
+    );
+
+    $summaryResult =
+        mysqli_stmt_get_result(
+            $result
+        );
+
+    if ($summaryResult) {
+
+        $row =
+            mysqli_fetch_assoc(
+                $summaryResult
+            );
+
+        $totalProducts =
+            (int) $row["total"];
+    }
+
+    mysqli_stmt_close(
+        $result
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| ACTIVE PRODUCTS
+|--------------------------------------------------------------------------
+*/
+
+$result = mysqli_prepare(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM products
+     WHERE shop_id = ?
+     AND status = 'active'"
+);
+
+
+if ($result) {
+
+    mysqli_stmt_bind_param(
+        $result,
+        "i",
+        $shopId
+    );
+
+    mysqli_stmt_execute(
+        $result
+    );
+
+    $summaryResult =
+        mysqli_stmt_get_result(
+            $result
+        );
+
+    if ($summaryResult) {
+
+        $row =
+            mysqli_fetch_assoc(
+                $summaryResult
+            );
+
+        $activeProducts =
+            (int) $row["total"];
+    }
+
+    mysqli_stmt_close(
+        $result
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOW STOCK
+|--------------------------------------------------------------------------
+*/
+
+$result = mysqli_prepare(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM products
+     WHERE shop_id = ?
+     AND stock_quantity > 0
+     AND stock_quantity <= low_stock_limit"
+);
+
+
+if ($result) {
+
+    mysqli_stmt_bind_param(
+        $result,
+        "i",
+        $shopId
+    );
+
+    mysqli_stmt_execute(
+        $result
+    );
+
+    $summaryResult =
+        mysqli_stmt_get_result(
+            $result
+        );
+
+    if ($summaryResult) {
+
+        $row =
+            mysqli_fetch_assoc(
+                $summaryResult
+            );
+
+        $lowStock =
+            (int) $row["total"];
+    }
+
+    mysqli_stmt_close(
+        $result
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| OUT OF STOCK
+|--------------------------------------------------------------------------
+*/
+
+$result = mysqli_prepare(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM products
+     WHERE shop_id = ?
+     AND stock_quantity <= 0"
+);
+
+
+if ($result) {
+
+    mysqli_stmt_bind_param(
+        $result,
+        "i",
+        $shopId
+    );
+
+    mysqli_stmt_execute(
+        $result
+    );
+
+    $summaryResult =
+        mysqli_stmt_get_result(
+            $result
+        );
+
+    if ($summaryResult) {
+
+        $row =
+            mysqli_fetch_assoc(
+                $summaryResult
+            );
+
+        $outOfStock =
+            (int) $row["total"];
+    }
+
+    mysqli_stmt_close(
+        $result
+    );
+}
+
 ?>
 
+
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Products | Grocery Management System</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <!-- Bootstrap -->
+    <title>
+        Products | Grocery Management System
+    </title>
+
+
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
 
-    <!-- Products CSS -->
-    <link rel="stylesheet" href="../assets/css/products.css">
+
+    <link
+        rel="stylesheet"
+        href="../assets/css/products.css"
+    >
 
 </head>
+
 
 <body>
 
 
-<!-- =========================
+<!-- =====================================================
      SIDEBAR
-========================= -->
+===================================================== -->
 
 <aside class="sidebar">
 
+
     <div class="brand">
+
 
         <img
             src="../assets/IMAGES/mainLogo.png"
             alt="Grocery Management System"
         >
 
+
         <div>
-            <h2>Grocery Manager</h2>
-            <span>Seller Panel</span>
+
+            <h2>
+                Grocery Manager
+            </h2>
+
+
+            <span>
+                Seller Panel
+            </span>
+
         </div>
+
 
     </div>
 
 
     <nav class="sidebar-nav">
 
-        <p class="nav-title">MAIN</p>
 
-        <a href="dashboard.php" class="nav-link">
-            <span class="nav-icon">⌂</span>
+        <p class="nav-title">
+            MAIN
+        </p>
+
+
+        <a
+            href="dashboard.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ⌂
+            </span>
+
             Dashboard
+
         </a>
 
-        <a href="products.php" class="nav-link active">
-            <span class="nav-icon">▣</span>
+
+        <a
+            href="products.php"
+            class="nav-link active"
+        >
+
+            <span class="nav-icon">
+                ▣
+            </span>
+
             Products
+
         </a>
 
-        <a href="categories.php" class="nav-link">
-            <span class="nav-icon">▤</span>
+
+        <a
+            href="categories.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ▤
+            </span>
+
             Categories
+
         </a>
 
-        <a href="stock.php" class="nav-link">
-            <span class="nav-icon">▥</span>
+
+        <a
+            href="stock.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ▥
+            </span>
+
             Stock
+
         </a>
 
 
-        <p class="nav-title">SALES</p>
+        <p class="nav-title">
+            SALES
+        </p>
 
-        <a href="new-sale.php" class="nav-link">
-            <span class="nav-icon">＋</span>
+
+        <a
+            href="new-sale.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ＋
+            </span>
+
             New Sale
+
         </a>
 
-        <a href="sales-history.php" class="nav-link">
-            <span class="nav-icon">▤</span>
+
+        <a
+            href="sales-history.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ▤
+            </span>
+
             Sales History
+
         </a>
 
-        <a href="invoices.php" class="nav-link">
-            <span class="nav-icon">▧</span>
+
+        <a
+            href="invoices.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ▧
+            </span>
+
             Invoices
+
         </a>
 
 
-        <p class="nav-title">CUSTOMERS</p>
+        <p class="nav-title">
+            CUSTOMERS
+        </p>
 
-        <a href="customers.php" class="nav-link">
-            <span class="nav-icon">♙</span>
+
+        <a
+            href="customers.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ♙
+            </span>
+
             Customers
+
         </a>
 
-        <a href="khata.php" class="nav-link">
-            <span class="nav-icon">₨</span>
+
+        <a
+            href="khata.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ₨
+            </span>
+
             Digital Khata
+
         </a>
 
-        <a href="payments.php" class="nav-link">
-            <span class="nav-icon">✓</span>
+
+        <a
+            href="payments.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ✓
+            </span>
+
             Payments
+
         </a>
 
 
-        <p class="nav-title">PURCHASE</p>
+        <p class="nav-title">
+            PURCHASE
+        </p>
 
-        <a href="suppliers.php" class="nav-link">
-            <span class="nav-icon">▣</span>
+
+        <a
+            href="suppliers.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ▣
+            </span>
+
             Suppliers
+
         </a>
 
-        <a href="purchases.php" class="nav-link">
-            <span class="nav-icon">↓</span>
+
+        <a
+            href="purchases.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ↓
+            </span>
+
             Purchases
+
         </a>
 
 
-        <p class="nav-title">BUSINESS</p>
+        <p class="nav-title">
+            BUSINESS
+        </p>
 
-        <a href="profit.php" class="nav-link">
-            <span class="nav-icon">↗</span>
+
+        <a
+            href="profit.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ↗
+            </span>
+
             Profit
+
         </a>
 
-        <a href="reports.php" class="nav-link">
-            <span class="nav-icon">▥</span>
+
+        <a
+            href="reports.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ▥
+            </span>
+
             Reports
+
         </a>
 
-        <a href="settings.php" class="nav-link">
-            <span class="nav-icon">⚙</span>
+
+        <a
+            href="settings.php"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ⚙
+            </span>
+
             Settings
+
         </a>
+
 
     </nav>
 
 
     <div class="sidebar-bottom">
 
-        <a href="#" class="nav-link">
-            <span class="nav-icon">?</span>
+
+        <a
+            href="#"
+            class="nav-link"
+        >
+
+            <span class="nav-icon">
+                ?
+            </span>
+
             Help & Support
+
         </a>
 
-        <a href="../logout.php" class="logout-link">
-            <span class="nav-icon">↪</span>
+
+        <a
+            href="../logout.php"
+            class="logout-link"
+        >
+
+            <span class="nav-icon">
+                ↪
+            </span>
+
             Logout
+
         </a>
+
 
     </div>
+
 
 </aside>
 
 
-<!-- =========================
+<!-- =====================================================
      MAIN CONTENT
-========================= -->
+===================================================== -->
 
 <main class="main-content">
 
@@ -180,15 +1629,26 @@ if (!isset($_SESSION["user_id"])) {
 
     <header class="topbar">
 
+
         <div class="topbar-left">
 
-            <button class="menu-button">
+
+            <button
+                class="menu-button"
+                type="button"
+            >
+
                 ☰
+
             </button>
+
 
             <div>
 
-                <h1>Products</h1>
+                <h1>
+                    Products
+                </h1>
+
 
                 <p>
                     Manage your grocery products
@@ -196,28 +1656,43 @@ if (!isset($_SESSION["user_id"])) {
 
             </div>
 
+
         </div>
 
 
         <div class="topbar-right">
 
-            <button class="notification-button">
+
+            <button
+                class="notification-button"
+                type="button"
+            >
+
                 🔔
-                <span class="notification-dot"></span>
+
+                <span
+                    class="notification-dot"
+                ></span>
+
             </button>
 
 
             <div class="profile">
 
+
                 <a href="../profile.php">
 
                     <div class="profile-avatar">
 
-                        <?php
-                        echo strtoupper(
-                            substr($_SESSION["user_name"] ?? "U", 0, 2)
-                        );
-                        ?>
+                        <?= e(
+                            strtoupper(
+                                substr(
+                                    $_SESSION["user_name"] ?? "U",
+                                    0,
+                                    2
+                                )
+                            )
+                        ) ?>
 
                     </div>
 
@@ -227,34 +1702,75 @@ if (!isset($_SESSION["user_id"])) {
                 <div class="profile-info">
 
                     <strong>
-                        <?php echo htmlspecialchars($_SESSION["user_name"] ?? "User"); ?>
+
+                        <?= e(
+                            $_SESSION["user_name"] ?? "User"
+                        ) ?>
+
                     </strong>
 
+
                     <span>
-                        <?php echo htmlspecialchars($_SESSION["role"] ?? "seller"); ?>
+
+                        <?= e(
+                            $_SESSION["role"] ?? "seller"
+                        ) ?>
+
                     </span>
 
                 </div>
 
+
             </div>
 
+
         </div>
+
 
     </header>
 
 
-    <!-- PAGE CONTENT -->
+    <!-- =================================================
+         PAGE CONTENT
+    ================================================= -->
 
     <div class="page-content">
+
+
+        <!-- MESSAGE -->
+
+        <?php if ($message !== ""): ?>
+
+            <div
+                class="alert alert-<?= e($messageType) ?> alert-dismissible fade show"
+                role="alert"
+            >
+
+                <?= e($message) ?>
+
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                ></button>
+
+            </div>
+
+        <?php endif; ?>
 
 
         <!-- PAGE HEADER -->
 
         <div class="page-header">
 
+
             <div>
 
-                <h2>Product Management</h2>
+                <h2>
+                    Product Management
+                </h2>
+
 
                 <p>
                     Add, update and manage products in your store.
@@ -269,15 +1785,18 @@ if (!isset($_SESSION["user_id"])) {
                 data-bs-toggle="modal"
                 data-bs-target="#addProductModal"
             >
+
                 + Add Product
+
             </button>
+
 
         </div>
 
 
-        <!-- =========================
+        <!-- =================================================
              SUMMARY CARDS
-        ========================= -->
+        ================================================= -->
 
         <div class="summary-grid">
 
@@ -288,11 +1807,19 @@ if (!isset($_SESSION["user_id"])) {
                     ▣
                 </div>
 
+
                 <div>
 
-                    <span>Total Products</span>
+                    <span>
+                        Total Products
+                    </span>
 
-                    <h3>0</h3>
+
+                    <h3>
+                        <?= number_format(
+                            $totalProducts
+                        ) ?>
+                    </h3>
 
                 </div>
 
@@ -305,11 +1832,19 @@ if (!isset($_SESSION["user_id"])) {
                     ✓
                 </div>
 
+
                 <div>
 
-                    <span>Active Products</span>
+                    <span>
+                        Active Products
+                    </span>
 
-                    <h3>0</h3>
+
+                    <h3>
+                        <?= number_format(
+                            $activeProducts
+                        ) ?>
+                    </h3>
 
                 </div>
 
@@ -322,11 +1857,19 @@ if (!isset($_SESSION["user_id"])) {
                     !
                 </div>
 
+
                 <div>
 
-                    <span>Low Stock</span>
+                    <span>
+                        Low Stock
+                    </span>
 
-                    <h3>0</h3>
+
+                    <h3>
+                        <?= number_format(
+                            $lowStock
+                        ) ?>
+                    </h3>
 
                 </div>
 
@@ -339,11 +1882,19 @@ if (!isset($_SESSION["user_id"])) {
                     ×
                 </div>
 
+
                 <div>
 
-                    <span>Out of Stock</span>
+                    <span>
+                        Out of Stock
+                    </span>
 
-                    <h3>0</h3>
+
+                    <h3>
+                        <?= number_format(
+                            $outOfStock
+                        ) ?>
+                    </h3>
 
                 </div>
 
@@ -353,95 +1904,211 @@ if (!isset($_SESSION["user_id"])) {
         </div>
 
 
-        <!-- =========================
-             PRODUCT TABLE
-        ========================= -->
+        <!-- =================================================
+             PRODUCT PANEL
+        ================================================= -->
 
         <div class="product-panel">
 
 
-            <!-- FILTER AREA -->
+            <!-- FILTER -->
 
-            <div class="filter-area">
+            <form
+                method="GET"
+                action="products.php"
+            >
 
-                <div class="search-box">
+                <div class="filter-area">
 
-                    <span>⌕</span>
 
-                    <input
-                        type="text"
-                        placeholder="Search product..."
+                    <div class="search-box">
+
+                        <span>
+                            ⌕
+                        </span>
+
+
+                        <input
+                            type="text"
+                            name="search"
+                            placeholder="Search product..."
+                            value="<?= e($search) ?>"
+                        >
+
+                    </div>
+
+
+                    <select
+                        name="category"
+                        class="filter-select"
                     >
+
+                        <option value="">
+                            All Categories
+                        </option>
+
+
+                        <?php foreach (
+                            $categories as $category
+                        ): ?>
+
+                            <option
+                                value="<?= (int) $category["id"] ?>"
+                                <?= (string) $categoryFilter ===
+                                    (string) $category["id"]
+                                    ? "selected"
+                                    : "" ?>
+                            >
+
+                                <?= e(
+                                    $category["name"]
+                                ) ?>
+
+                            </option>
+
+                        <?php endforeach; ?>
+
+
+                    </select>
+
+
+                    <select
+                        name="stock"
+                        class="filter-select"
+                    >
+
+                        <option value="">
+                            All Stock
+                        </option>
+
+
+                        <option
+                            value="in_stock"
+                            <?= $stockFilter === "in_stock"
+                                ? "selected"
+                                : "" ?>
+                        >
+
+                            In Stock
+
+                        </option>
+
+
+                        <option
+                            value="low_stock"
+                            <?= $stockFilter === "low_stock"
+                                ? "selected"
+                                : "" ?>
+                        >
+
+                            Low Stock
+
+                        </option>
+
+
+                        <option
+                            value="out_of_stock"
+                            <?= $stockFilter === "out_of_stock"
+                                ? "selected"
+                                : "" ?>
+                        >
+
+                            Out of Stock
+
+                        </option>
+
+
+                    </select>
+
+
+                    <button
+                        type="submit"
+                        class="filter-btn"
+                    >
+
+                        Filter
+
+                    </button>
+
+
+                    <?php if (
+                        $search !== "" ||
+                        $categoryFilter !== "" ||
+                        $stockFilter !== ""
+                    ): ?>
+
+                        <a
+                            href="products.php"
+                            class="btn btn-light"
+                        >
+
+                            Clear
+
+                        </a>
+
+                    <?php endif; ?>
+
 
                 </div>
 
-
-                <select class="filter-select">
-
-                    <option value="">
-                        All Categories
-                    </option>
-
-                </select>
+            </form>
 
 
-                <select class="filter-select">
-
-                    <option value="">
-                        All Stock
-                    </option>
-
-                    <option value="in-stock">
-                        In Stock
-                    </option>
-
-                    <option value="low-stock">
-                        Low Stock
-                    </option>
-
-                    <option value="out-stock">
-                        Out of Stock
-                    </option>
-
-                </select>
-
-
-                <button class="filter-btn">
-                    Filter
-                </button>
-
-            </div>
-
-
-            <!-- TABLE -->
+            <!-- =================================================
+                 TABLE
+            ================================================= -->
 
             <div class="table-responsive">
 
-                <table class="table product-table align-middle">
+
+                <table
+                    class="table product-table align-middle"
+                >
+
 
                     <thead>
 
                         <tr>
 
-                            <th>#</th>
+                            <th>
+                                #
+                            </th>
 
-                            <th>Product</th>
+                            <th>
+                                Product
+                            </th>
 
-                            <th>Category</th>
+                            <th>
+                                Category
+                            </th>
 
-                            <th>SKU</th>
+                            <th>
+                                SKU
+                            </th>
 
-                            <th>Barcode</th>
+                            <th>
+                                Barcode
+                            </th>
 
-                            <th>Unit</th>
+                            <th>
+                                Unit
+                            </th>
 
-                            <th>Purchase Price</th>
+                            <th>
+                                Purchase Price
+                            </th>
 
-                            <th>Sale Price</th>
+                            <th>
+                                Sale Price
+                            </th>
 
-                            <th>Stock</th>
+                            <th>
+                                Stock
+                            </th>
 
-                            <th>Status</th>
+                            <th>
+                                Status
+                            </th>
 
                             <th class="text-end">
                                 Action
@@ -454,63 +2121,322 @@ if (!isset($_SESSION["user_id"])) {
 
                     <tbody>
 
+
+                    <?php if (
+                        empty($products)
+                    ): ?>
+
                         <tr>
 
-                            <td colspan="11" class="text-center">
-                                No products added yet.
+                            <td
+                                colspan="11"
+                                class="text-center py-5"
+                            >
+
+                                <h5>
+                                    No products found
+                                </h5>
+
+
+                                <p class="text-muted mb-0">
+
+                                    Add a product to get started.
+
+                                </p>
+
                             </td>
 
                         </tr>
 
+
+                    <?php else: ?>
+
+
+                        <?php foreach (
+                            $products as $index => $product
+                        ): ?>
+
+
+                            <?php
+
+                            $stock =
+                                (float) $product[
+                                    "stock_quantity"
+                                ];
+
+                            $lowLimit =
+                                (float) $product[
+                                    "low_stock_limit"
+                                ];
+
+
+                            if ($stock <= 0) {
+
+                                $stockStatus =
+                                    "Out of Stock";
+
+                                $statusClass =
+                                    "out-stock";
+
+                            } elseif (
+                                $stock <= $lowLimit
+                            ) {
+
+                                $stockStatus =
+                                    "Low Stock";
+
+                                $statusClass =
+                                    "low-stock";
+
+                            } else {
+
+                                $stockStatus =
+                                    "In Stock";
+
+                                $statusClass =
+                                    "in-stock";
+                            }
+
+
+                            $initials =
+                                strtoupper(
+                                    substr(
+                                        $product["name"],
+                                        0,
+                                        2
+                                    )
+                                );
+
+                            ?>
+
+
+                            <tr>
+
+
+                                <td>
+
+                                    <?= str_pad(
+                                        $index + 1,
+                                        2,
+                                        "0",
+                                        STR_PAD_LEFT
+                                    ) ?>
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="product-name">
+
+
+                                        <div class="product-image">
+
+                                            <?= e(
+                                                $initials
+                                            ) ?>
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <strong>
+
+                                                <?= e(
+                                                    $product["name"]
+                                                ) ?>
+
+                                            </strong>
+
+                                        </div>
+
+
+                                    </div>
+
+                                </td>
+
+
+                                <td>
+
+                                    <?= e(
+                                        $product["category_name"]
+                                        ?? "Uncategorized"
+                                    ) ?>
+
+                                </td>
+
+
+                                <td>
+
+                                    <?= e(
+                                        $product["sku"]
+                                    ) ?>
+
+                                </td>
+
+
+                                <td>
+
+                                    <?= e(
+                                        $product["barcode"]
+                                    ) ?>
+
+                                </td>
+
+
+                                <td>
+
+                                    <?= e(
+                                        $product["unit"]
+                                    ) ?>
+
+                                </td>
+
+
+                                <td>
+
+                                    ₨
+                                    <?= number_format(
+                                        (float)
+                                        $product[
+                                            "purchase_price"
+                                        ],
+                                        2
+                                    ) ?>
+
+                                </td>
+
+
+                                <td>
+
+                                    ₨
+                                    <?= number_format(
+                                        (float)
+                                        $product[
+                                            "sale_price"
+                                        ],
+                                        2
+                                    ) ?>
+
+                                </td>
+
+
+                                <td>
+
+                                    <strong>
+
+                                        <?= rtrim(
+                                            rtrim(
+                                                number_format(
+                                                    $stock,
+                                                    2,
+                                                    ".",
+                                                    ""
+                                                ),
+                                                "0"
+                                            ),
+                                            "."
+                                        ) ?>
+
+                                    </strong>
+
+                                </td>
+
+
+                                <td>
+
+                                    <span
+                                        class="stock-status <?= e(
+                                            $statusClass
+                                        ) ?>"
+                                    >
+
+                                        <?= e(
+                                            $stockStatus
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <td class="text-end">
+
+
+                                    <button
+                                        type="button"
+                                        class="action-btn edit"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editProductModal<?= (int) $product["id"] ?>"
+                                    >
+
+                                        Edit
+
+                                    </button>
+
+
+                                    <form
+                                        method="POST"
+                                        action="products.php"
+                                        style="display:inline;"
+                                    >
+
+
+                                        <input
+                                            type="hidden"
+                                            name="id"
+                                            value="<?= (int) $product["id"] ?>"
+                                        >
+
+
+                                        <button
+                                            type="submit"
+                                            name="delete_product"
+                                            class="action-btn delete"
+                                            onclick="return confirm('Are you sure you want to delete this product?')"
+                                        >
+
+                                            Delete
+
+                                        </button>
+
+
+                                    </form>
+
+
+                                </td>
+
+
+                            </tr>
+
+
+                        <?php endforeach; ?>
+
+
+                    <?php endif; ?>
+
+
                     </tbody>
 
+
                 </table>
+
 
             </div>
 
 
-            <!-- PAGINATION -->
+            <!-- TABLE FOOTER -->
 
             <div class="table-footer">
 
                 <p>
-                    Showing 0 products
+
+                    Showing
+                    <?= count($products) ?>
+                    product(s)
+
                 </p>
-
-
-                <nav>
-
-                    <ul class="pagination pagination-sm mb-0">
-
-                        <li class="page-item disabled">
-
-                            <a class="page-link" href="#">
-                                Previous
-                            </a>
-
-                        </li>
-
-
-                        <li class="page-item active">
-
-                            <a class="page-link" href="#">
-                                1
-                            </a>
-
-                        </li>
-
-
-                        <li class="page-item disabled">
-
-                            <a class="page-link" href="#">
-                                Next
-                            </a>
-
-                        </li>
-
-                    </ul>
-
-                </nav>
 
             </div>
 
@@ -520,13 +2446,13 @@ if (!isset($_SESSION["user_id"])) {
 
     </div>
 
+
 </main>
 
 
-
-<!-- =========================
+<!-- =====================================================
      ADD PRODUCT MODAL
-========================= -->
+===================================================== -->
 
 <div
     class="modal fade"
@@ -535,18 +2461,22 @@ if (!isset($_SESSION["user_id"])) {
     aria-hidden="true"
 >
 
+
     <div class="modal-dialog modal-dialog-centered modal-lg">
+
 
         <div class="modal-content">
 
 
             <div class="modal-header">
 
+
                 <div>
 
                     <h5 class="modal-title">
                         Add New Product
                     </h5>
+
 
                     <small>
                         Enter product information below
@@ -561,53 +2491,62 @@ if (!isset($_SESSION["user_id"])) {
                     data-bs-dismiss="modal"
                 ></button>
 
+
             </div>
 
-        <form action="products.php" method="POST">
 
-            <div class="modal-body">
+            <form
+                method="POST"
+                action="products.php"
+            >
 
-                <form>
+
+                <div class="modal-body">
 
 
-        <div class="row g-3">
+                    <div class="row g-3">
 
+
+                        <!-- PRODUCT NAME -->
 
                         <div class="col-md-8">
 
-                <label class="form-label">
-                    Product Name
-                </label>
+                            <label class="form-label">
+                                Product Name
+                            </label>
 
-                <input
-                    type="text"
-                    name="product_name"
-                    class="form-control"
-                    placeholder="Enter product name"
-                    required
-                >
 
-            </div>
+                            <input
+                                type="text"
+                                name="name"
+                                class="form-control"
+                                placeholder="Enter product name"
+                                maxlength="150"
+                                required
+                            >
+
+                        </div>
 
 
                         <!-- SKU -->
 
-            <!-- SKU -->
-            <div class="col-md-4">
+                        <div class="col-md-4">
 
-                <label class="form-label">
-                    SKU
-                </label>
+                            <label class="form-label">
+                                SKU
+                            </label>
 
-                <input
-                    type="text"
-                    name="sku"
-                    class="form-control"
-                    placeholder="e.g. PRD-001"
-                    required
-                >
 
-            </div>
+                            <input
+                                type="text"
+                                name="sku"
+                                class="form-control"
+                                placeholder="e.g. PRD-001"
+                                maxlength="50"
+                                required
+                            >
+
+                        </div>
 
 
                         <!-- BARCODE -->
@@ -618,10 +2557,13 @@ if (!isset($_SESSION["user_id"])) {
                                 Barcode
                             </label>
 
+
                             <input
                                 type="text"
+                                name="barcode"
                                 class="form-control"
                                 placeholder="Enter barcode"
+                                maxlength="100"
                             >
 
                         </div>
@@ -629,154 +2571,254 @@ if (!isset($_SESSION["user_id"])) {
 
                         <!-- CATEGORY -->
 
-            <!-- Category -->
-            <div class="col-md-6">
+                        <div class="col-md-6">
 
-                <label class="form-label">
-                    Category
-                </label>
+                            <label class="form-label">
+                                Category
+                            </label>
 
-                <select
-                    name="category"
-                    class="form-select"
-                    required
-                >
 
-                    <option value="">
-                        Select category
-                    </option>
+                            <select
+                                name="category_id"
+                                class="form-select"
+                                required
+                            >
 
-                                <option>Grocery</option>
-                                <option>Rice & Grains</option>
-                                <option>Dairy</option>
-                                <option>Beverages</option>
-                                <option>Cleaning</option>
+                                <option value="">
+                                    Select category
+                                </option>
+
+
+                                <?php foreach (
+                                    $categories as $category
+                                ): ?>
+
+                                    <option
+                                        value="<?= (int) $category["id"] ?>"
+                                    >
+
+                                        <?= e(
+                                            $category["name"]
+                                        ) ?>
+
+                                    </option>
+
+                                <?php endforeach; ?>
+
 
                             </select>
 
-            </div>
+                        </div>
 
 
                         <!-- UNIT -->
 
-            <!-- Unit -->
-            <div class="col-md-6">
+                        <div class="col-md-6">
 
-                <label class="form-label">
-                    Unit
-                </label>
-
-                <select
-                    name="unit"
-                    class="form-select"
-                    required
-                >
-
-                    <option value="">
-                        Select unit
-                    </option>
-
-                                <option>Piece</option>
-                                <option>Kg</option>
-                                <option>Gram</option>
-                                <option>Liter</option>
-                                <option>Pack</option>
-                                <option>Dozen</option>
-
-                </select>
-
-            </div>
+                            <label class="form-label">
+                                Unit
+                            </label>
 
 
-                        <div class="col-md-4">
+                            <select
+                                name="unit"
+                                class="form-select"
+                                required
+                            >
 
-                <label class="form-label">
-                    Purchase Price
-                </label>
+                                <option value="">
+                                    Select unit
+                                </option>
+
+
+                                <option value="Piece">
+                                    Piece
+                                </option>
+
+
+                                <option value="Kg">
+                                    Kg
+                                </option>
+
+
+                                <option value="Gram">
+                                    Gram
+                                </option>
+
+
+                                <option value="Liter">
+                                    Liter
+                                </option>
+
+
+                                <option value="Pack">
+                                    Pack
+                                </option>
+
+
+                                <option value="Dozen">
+                                    Dozen
+                                </option>
+
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- PURCHASE PRICE -->
+
+                        <div class="col-md-3">
+
+                            <label class="form-label">
+                                Purchase Price
+                            </label>
+
 
                             <input
                                 type="number"
+                                name="purchase_price"
                                 class="form-control"
-                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                required
                             >
 
-            </div>
+                        </div>
 
 
-                        <div class="col-md-4">
+                        <!-- SALE PRICE -->
 
-                <label class="form-label">
-                    Sale Price
-                </label>
+                        <div class="col-md-3">
+
+                            <label class="form-label">
+                                Sale Price
+                            </label>
+
 
                             <input
                                 type="number"
+                                name="sale_price"
                                 class="form-control"
-                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                required
                             >
 
-            </div>
+                        </div>
 
 
-                        <div class="col-md-4">
+                        <!-- STOCK -->
+
+                        <div class="col-md-3">
 
                             <label class="form-label">
                                 Opening Stock
                             </label>
 
+
                             <input
                                 type="number"
+                                name="stock_quantity"
                                 class="form-control"
-                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                value="0"
+                                required
                             >
 
-            </div>
+                        </div>
 
 
-                        <div class="col-12">
+                        <!-- LOW STOCK LIMIT -->
+
+                        <div class="col-md-3">
 
                             <label class="form-label">
-                                Description
+                                Low Stock Limit
                             </label>
 
-                            <textarea
-                                class="form-control"
-                                rows="3"
-                                placeholder="Optional product description"
-                            ></textarea>
 
-            </div>
+                            <input
+                                type="number"
+                                name="low_stock_limit"
+                                class="form-control"
+                                step="0.01"
+                                min="0"
+                                value="5"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- STATUS -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Status
+                            </label>
+
+
+                            <select
+                                name="status"
+                                class="form-select"
+                            >
+
+                                <option
+                                    value="active"
+                                    selected
+                                >
+                                    Active
+                                </option>
+
+
+                                <option value="inactive">
+                                    Inactive
+                                </option>
+
+                            </select>
+
+                        </div>
 
 
                     </div>
 
-
-                </form>
-
-            </div>
+                </div>
 
 
-    <div class="modal-footer">
+                <div class="modal-footer">
 
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
 
-        <button
-            type="submit"
-            name="add_product"
-            class="btn add-product-btn"
-        >
-            Save Product
-        </button>
+                    <button
+                        type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal"
+                    >
 
-    </div>
+                        Cancel
 
-</form>
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        name="add_product"
+                        class="btn add-product-btn"
+                    >
+
+                        Save Product
+
+                    </button>
+
+
+                </div>
+
+
+            </form>
 
 
         </div>
@@ -786,30 +2828,38 @@ if (!isset($_SESSION["user_id"])) {
 </div>
 
 
+<!-- =====================================================
+     EDIT PRODUCT MODALS
+===================================================== -->
 
-<!-- =========================
-     EDIT PRODUCT MODAL
-========================= -->
+<?php foreach (
+    $products as $product
+): ?>
+
 
 <div
     class="modal fade"
-    id="editProductModal"
+    id="editProductModal<?= (int) $product["id"] ?>"
     tabindex="-1"
     aria-hidden="true"
 >
 
+
     <div class="modal-dialog modal-dialog-centered modal-lg">
+
 
         <div class="modal-content">
 
 
             <div class="modal-header">
 
+
                 <div>
 
                     <h5 class="modal-title">
                         Edit Product
                     </h5>
+
 
                     <small>
                         Update product information
@@ -824,15 +2874,30 @@ if (!isset($_SESSION["user_id"])) {
                     data-bs-dismiss="modal"
                 ></button>
 
+
             </div>
 
 
-            <div class="modal-body">
+            <form
+                method="POST"
+                action="products.php"
+            >
 
-                <form>
+
+                <div class="modal-body">
+
+
+                    <input
+                        type="hidden"
+                        name="id"
+                        value="<?= (int) $product["id"] ?>"
+                    >
+
 
                     <div class="row g-3">
 
+
+                        <!-- PRODUCT NAME -->
 
                         <div class="col-md-8">
 
@@ -840,14 +2905,22 @@ if (!isset($_SESSION["user_id"])) {
                                 Product Name
                             </label>
 
+
                             <input
                                 type="text"
+                                name="name"
                                 class="form-control"
-                                placeholder="Enter product name"
+                                value="<?= e(
+                                    $product["name"]
+                                ) ?>"
+                                maxlength="150"
+                                required
                             >
 
                         </div>
 
+
+                        <!-- SKU -->
 
                         <div class="col-md-4">
 
@@ -855,14 +2928,22 @@ if (!isset($_SESSION["user_id"])) {
                                 SKU
                             </label>
 
+
                             <input
                                 type="text"
+                                name="sku"
                                 class="form-control"
-                                placeholder="Enter SKU"
+                                value="<?= e(
+                                    $product["sku"]
+                                ) ?>"
+                                maxlength="50"
+                                required
                             >
 
                         </div>
 
+
+                        <!-- BARCODE -->
 
                         <div class="col-md-6">
 
@@ -870,14 +2951,21 @@ if (!isset($_SESSION["user_id"])) {
                                 Barcode
                             </label>
 
+
                             <input
                                 type="text"
+                                name="barcode"
                                 class="form-control"
-                                placeholder="Enter barcode"
+                                value="<?= e(
+                                    $product["barcode"]
+                                ) ?>"
+                                maxlength="100"
                             >
 
                         </div>
 
+
+                        <!-- CATEGORY -->
 
                         <div class="col-md-6">
 
@@ -885,16 +2973,46 @@ if (!isset($_SESSION["user_id"])) {
                                 Category
                             </label>
 
-                            <select class="form-select">
 
-                                <option selected>
+                            <select
+                                name="category_id"
+                                class="form-select"
+                                required
+                            >
+
+
+                                <option value="">
                                     Select category
                                 </option>
+
+
+                                <?php foreach (
+                                    $categories as $category
+                                ): ?>
+
+                                    <option
+                                        value="<?= (int) $category["id"] ?>"
+                                        <?= (int) $product["category_id"] ===
+                                            (int) $category["id"]
+                                            ? "selected"
+                                            : "" ?>
+                                    >
+
+                                        <?= e(
+                                            $category["name"]
+                                        ) ?>
+
+                                    </option>
+
+                                <?php endforeach; ?>
+
 
                             </select>
 
                         </div>
 
+
+                        <!-- UNIT -->
 
                         <div class="col-md-6">
 
@@ -902,104 +3020,147 @@ if (!isset($_SESSION["user_id"])) {
                                 Unit
                             </label>
 
-                            <select class="form-select">
 
-                                <option value="piece">
-                                    Piece
-                                </option>
+                            <select
+                                name="unit"
+                                class="form-select"
+                                required
+                            >
 
-                                <option value="kg">
-                                    Kg
-                                </option>
+                                <?php
 
-                                <option value="gram">
-                                    Gram
-                                </option>
+                                $units = [
+                                    "Piece",
+                                    "Kg",
+                                    "Gram",
+                                    "Liter",
+                                    "Pack",
+                                    "Dozen"
+                                ];
 
-                                <option value="liter">
-                                    Liter
-                                </option>
+                                ?>
 
-                                <option value="pack">
-                                    Pack
-                                </option>
 
-                                <option value="dozen">
-                                    Dozen
-                                </option>
+                                <?php foreach (
+                                    $units as $unit
+                                ): ?>
+
+                                    <option
+                                        value="<?= e($unit) ?>"
+                                        <?= $product["unit"] === $unit
+                                            ? "selected"
+                                            : "" ?>
+                                    >
+
+                                        <?= e($unit) ?>
+
+                                    </option>
+
+                                <?php endforeach; ?>
+
 
                             </select>
 
                         </div>
 
 
-                        <div class="col-md-6">
+                        <!-- PURCHASE PRICE -->
+
+                        <div class="col-md-3">
 
                             <label class="form-label">
                                 Purchase Price
                             </label>
 
+
                             <input
                                 type="number"
+                                name="purchase_price"
                                 class="form-control"
+                                value="<?= e(
+                                    $product["purchase_price"]
+                                ) ?>"
                                 step="0.01"
                                 min="0"
-                                placeholder="0.00"
+                                required
                             >
 
                         </div>
 
 
-                        <div class="col-md-6">
+                        <!-- SALE PRICE -->
+
+                        <div class="col-md-3">
 
                             <label class="form-label">
                                 Sale Price
                             </label>
 
+
                             <input
                                 type="number"
+                                name="sale_price"
                                 class="form-control"
+                                value="<?= e(
+                                    $product["sale_price"]
+                                ) ?>"
                                 step="0.01"
                                 min="0"
-                                placeholder="0.00"
+                                required
                             >
 
                         </div>
 
 
-                        <div class="col-md-6">
+                        <!-- STOCK -->
+
+                        <div class="col-md-3">
 
                             <label class="form-label">
                                 Stock Quantity
                             </label>
 
+
                             <input
                                 type="number"
+                                name="stock_quantity"
                                 class="form-control"
+                                value="<?= e(
+                                    $product["stock_quantity"]
+                                ) ?>"
                                 step="0.01"
                                 min="0"
-                                placeholder="0"
+                                required
                             >
 
                         </div>
 
 
-                        <div class="col-md-6">
+                        <!-- LOW STOCK LIMIT -->
+
+                        <div class="col-md-3">
 
                             <label class="form-label">
                                 Low Stock Limit
                             </label>
 
+
                             <input
                                 type="number"
+                                name="low_stock_limit"
                                 class="form-control"
+                                value="<?= e(
+                                    $product["low_stock_limit"]
+                                ) ?>"
                                 step="0.01"
                                 min="0"
-                                placeholder="5"
+                                required
                             >
 
                         </div>
 
+
+                        <!-- STATUS -->
 
                         <div class="col-md-6">
 
@@ -1007,14 +3168,33 @@ if (!isset($_SESSION["user_id"])) {
                                 Status
                             </label>
 
-                            <select class="form-select">
 
-                                <option value="active">
+                            <select
+                                name="status"
+                                class="form-select"
+                            >
+
+                                <option
+                                    value="active"
+                                    <?= $product["status"] === "active"
+                                        ? "selected"
+                                        : "" ?>
+                                >
+
                                     Active
+
                                 </option>
 
-                                <option value="inactive">
+
+                                <option
+                                    value="inactive"
+                                    <?= $product["status"] === "inactive"
+                                        ? "selected"
+                                        : "" ?>
+                                >
+
                                     Inactive
+
                                 </option>
 
                             </select>
@@ -1024,30 +3204,38 @@ if (!isset($_SESSION["user_id"])) {
 
                     </div>
 
-                </form>
-
-            </div>
+                </div>
 
 
-            <div class="modal-footer">
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
+                <div class="modal-footer">
 
 
-                <button
-                    type="button"
-                    class="btn add-product-btn"
-                >
-                    Update Product
-                </button>
+                    <button
+                        type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal"
+                    >
 
-            </div>
+                        Cancel
+
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        name="update_product"
+                        class="btn add-product-btn"
+                    >
+
+                        Update Product
+
+                    </button>
+
+
+                </div>
+
+
+            </form>
 
 
         </div>
@@ -1057,12 +3245,16 @@ if (!isset($_SESSION["user_id"])) {
 </div>
 
 
+<?php endforeach; ?>
 
-<!-- Bootstrap JS -->
+
+<!-- =====================================================
+     BOOTSTRAP JS
+===================================================== -->
 
 <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
-</script>
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
 
 
 </body>

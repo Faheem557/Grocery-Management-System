@@ -2,6 +2,9 @@
    session_start();
    
    $name = $_SESSION["user_name"];
+   $role = $_SESSION["role"];
+   $photo_url = $_SESSION["photo_url"];
+//    $profile_photo = $_SESSION["profile_photo"];
     if(!$name){
         header("Location: ../login.php");
     }
@@ -188,7 +191,7 @@
             <?php if (!empty($profile_photo)): ?>
 
                 <img
-                    src="../<?php echo htmlspecialchars($profile_photo); ?>"
+                    src="<?php echo htmlspecialchars($photo_url); ?>"
                     alt="Profile Photo"
                     class="dashboard-profile-photo"
                 >
